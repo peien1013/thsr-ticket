@@ -1,0 +1,3383 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高鐵車票登記與查詢</title>
+  <meta name="description" content="高鐵團體車票登記：選好去回程車次與票種，送出後可用登記人姓名查詢登記與車位。">
+  <meta property="og:title" content="高鐵車票登記與查詢">
+  <meta property="og:description" content="選好去回程車次與票種，送出後可用登記人姓名查詢登記與車位。">
+  <meta property="og:image" content="https://drive.google.com/thumbnail?id=1pfk9qaZ3FkOBmVpJqZz6wKI5aSceF5_q&sz=w1600">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚄</text></svg>">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: linear-gradient(160deg, #f7efe3 0%, #ffffff 56%, #eef6ff 100%);
+      color: #2b2b2b;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 18px 12px 36px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .ticket {
+      width: 100%;
+      max-width: 860px;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+      overflow: hidden;
+      border: 3px solid #b8864f;
+      position: relative;
+    }
+
+    .poster-top {
+      width: 100%;
+      background: #f7efe3;
+      padding: 10px;
+      border-bottom: 4px solid #b8864f;
+    }
+
+    .poster-top img {
+      width: 100%;
+      max-height: 430px;
+      object-fit: contain;
+      object-position: center;
+      display: block;
+      border-radius: 18px;
+      background: #f7efe3;
+    }
+
+    .poster-fallback {
+      display: none;
+      text-align: center;
+      padding: 30px 20px;
+      background: #fff8ef;
+      border-radius: 18px;
+      color: #7b4b2a;
+      font-weight: 900;
+      line-height: 1.8;
+    }
+
+    .hero {
+      padding: 20px 22px;
+      background: linear-gradient(135deg, #b8864f, #d6b37a);
+      color: white;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .hero-title {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.16);
+    }
+
+    .hero-subtitle {
+      font-size: 17px;
+      font-weight: 700;
+      opacity: 0.95;
+      line-height: 1.6;
+    }
+
+    .hsr-box {
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 8px;
+      backdrop-filter: blur(2px);
+    }
+
+    .hsr-svg {
+      width: 100%;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .content { padding: 24px 20px 30px; }
+
+    .event-box {
+      background: #fffaf3;
+      border: 2px dashed #b8864f;
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 20px;
+      line-height: 1.7;
+      font-size: 16px;
+      color: #3d3028;
+    }
+
+    .event-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: #7b4b2a;
+      margin-bottom: 6px;
+    }
+
+    .route-box, .back-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .back-box { margin-bottom: 22px; }
+
+    .train-date {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #fff;
+      color: #555;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .back-box-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #1f5f9d;
+      margin: 6px 0 0;
+      padding: 6px 14px;
+      background: #eef6ff;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .route-card {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 2px solid #d6c0a0;
+      box-shadow: 0 8px 18px rgba(90, 60, 30, 0.12);
+      background: #fff;
+    }
+
+    .route-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      letter-spacing: 6px;
+      font-size: 25px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .go-card .route-label { background: linear-gradient(180deg, #b8864f, #7b4b2a); }
+    .back-card .route-label { background: linear-gradient(180deg, #1f5f9d, #173f68); }
+
+    .route-main { padding: 16px 14px; }
+
+    .station-row {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .station {
+      text-align: center;
+      background: #fff8ef;
+      border-radius: 18px;
+      padding: 12px 8px;
+      border: 2px solid #ead8c0;
+    }
+
+    .back-card .station {
+      background: #f0f7ff;
+      border-color: #cfe3f8;
+    }
+
+    .station-small {
+      display: block;
+      font-size: 16px;
+      font-weight: 900;
+      color: #7b6a5c;
+      margin-bottom: 4px;
+    }
+
+    .station strong {
+      display: block;
+      font-size: 28px;
+      font-weight: 900;
+      color: #3a2a20;
+    }
+
+    .arrow {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 900;
+      color: #b8864f;
+    }
+
+    .back-card .arrow { color: #1f5f9d; }
+
+    .train-info {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 16px;
+      background: #f7efe3;
+      color: #3a2a20;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .back-card .train-info { background: #eef6ff; }
+
+    .train-info-chips {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .train-chip {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      width: 280px;
+      max-width: 100%;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #d6c0a0;
+      font-size: 17px;
+      font-weight: 900;
+      overflow: hidden;
+      line-height: 1.2;
+    }
+
+    .train-chip .chip-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 10px;
+      background: #b8864f;
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+
+    .train-chip .chip-value {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 14px;
+      color: #3a2a20;
+      background: #fffaf3;
+      text-align: center;
+    }
+
+    .back-card .train-chip {
+      border-color: #cfe3f8;
+    }
+
+    .back-card .train-chip .chip-label {
+      background: #1f5f9d;
+    }
+
+    .back-card .train-chip .chip-value {
+      background: #f4f9ff;
+      color: #173f68;
+    }
+
+    .train-chip-fare {
+      border-color: #d6b37a !important;
+      box-shadow: 0 3px 8px rgba(184, 134, 79, 0.18);
+    }
+
+    .train-chip-fare .chip-label {
+      background: linear-gradient(135deg, #d6a55a, #b8864f) !important;
+    }
+
+    .train-chip-fare .chip-value {
+      background: linear-gradient(135deg, #fff8e8, #fff3d6) !important;
+      color: #7b4b2a !important;
+      font-size: 19px;
+    }
+
+    .back-card .train-chip-fare {
+      border-color: #4aa3df !important;
+      box-shadow: 0 3px 8px rgba(31, 95, 157, 0.18);
+    }
+
+    .back-card .train-chip-fare .chip-label {
+      background: linear-gradient(135deg, #4aa3df, #1f5f9d) !important;
+    }
+
+    .back-card .train-chip-fare .chip-value {
+      background: linear-gradient(135deg, #eef6ff, #dbeaff) !important;
+      color: #1f5f9d !important;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 18px 0 22px;
+    }
+
+    .mode-btn {
+      border: 3px solid #b8864f;
+      background: linear-gradient(180deg, #ffffff, #fff8ef);
+      color: #7b4b2a;
+      border-radius: 999px;
+      padding: 15px 12px;
+      font-size: 20px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.18s;
+      box-shadow: 0 8px 0 #d6c0a0, 0 14px 24px rgba(90, 60, 30, 0.18);
+      transform: translateY(-4px);
+    }
+
+    .mode-btn:hover {
+      transform: translateY(-7px);
+      box-shadow: 0 11px 0 #d6c0a0, 0 18px 28px rgba(90, 60, 30, 0.22);
+    }
+
+    .mode-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 0 #d6c0a0, 0 8px 16px rgba(90, 60, 30, 0.18);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      color: #fff;
+      border-color: #7b4b2a;
+      box-shadow: 0 9px 0 #5f351d, 0 16px 28px rgba(123,75,42,0.32);
+      transform: translateY(-6px);
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #333;
+      margin: 26px 0 12px;
+      padding-left: 12px;
+      border-left: 7px solid #b8864f;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 4px 8px rgba(123, 75, 42, 0.3);
+      flex-shrink: 0;
+    }
+
+    .hero-input {
+      background: linear-gradient(135deg, #fff8ef 0%, #ffffff 100%);
+      border: 3px solid #b8864f;
+      border-radius: 24px;
+      padding: 20px 20px 16px;
+      margin-bottom: 8px;
+      box-shadow: 0 10px 24px rgba(184, 134, 79, 0.18);
+      position: relative;
+    }
+
+    .hero-input::before {
+      content: "★ 最重要";
+      position: absolute;
+      top: -12px;
+      left: 18px;
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 999px;
+      box-shadow: 0 3px 8px rgba(123, 75, 42, 0.35);
+    }
+
+    .hero-input-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 19px;
+      font-weight: 900;
+      color: #7b4b2a;
+      margin: 8px 0 4px;
+    }
+
+    .hero-input-hint {
+      font-size: 13px;
+      font-weight: 800;
+      color: #8b8579;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .hero-input-field {
+      font-size: 22px;
+      font-weight: 900;
+      border: 2px solid #e8d6b4;
+      border-radius: 18px;
+      padding: 16px 18px;
+      width: 100%;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .hero-input-field:focus {
+      border-color: #b8864f;
+      box-shadow: 0 0 0 4px rgba(184,134,79,0.16);
+      outline: none;
+    }
+
+    .name-preview {
+      display: none;
+      margin: 6px 0 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #e9f8ef, #d8f0e2);
+      border: 2px solid #2e9d7a;
+      color: #146b38;
+      font-size: 17px;
+      font-weight: 900;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    .name-preview.show { display: flex; }
+
+    .name-preview-check {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #2e9d7a;
+      color: #fff;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .name-preview-text strong {
+      color: #0f5d36;
+      font-size: 19px;
+      padding: 0 4px;
+    }
+
+    .passenger-summary {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eef6ff, #f7fbff);
+      border: 2px dashed #1f5f9d;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .passenger-summary-label {
+      font-size: 14px;
+      font-weight: 900;
+      color: #1f5f9d;
+      margin-right: 4px;
+    }
+
+    .summary-tag {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #cfe3f8;
+      color: #1f5f9d;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .summary-tag.empty {
+      background: #f5f5f5;
+      border-color: #ddd;
+      color: #999;
+    }
+
+    .summary-tag.price {
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      border-color: #7b4b2a;
+      color: #ffffff;
+      font-size: 16px;
+      padding: 6px 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 17px;
+      font-weight: 900;
+      margin: 14px 0 8px;
+      color: #2b2b2b;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 2px solid #e3e3e3;
+      border-radius: 18px;
+      padding: 15px;
+      font-size: 18px;
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #b8864f;
+      box-shadow: 0 0 0 4px rgba(184,134,79,0.14);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .label-hint {
+      margin-top: -4px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #6f7787;
+      line-height: 1.5;
+    }
+
+    .need-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 12px;
+      margin: 10px 0 18px;
+    }
+
+    .need-option {
+      display: flex;
+      width: 100%;
+    }
+
+    .need-option input { display: none; }
+
+    .need-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      min-height: 150px;
+      border-radius: 22px;
+      padding: 14px 10px;
+      border: 3px solid #e7e7e7;
+      background: #ffffff;
+      cursor: pointer;
+      transition: .18s;
+      box-shadow: 0 6px 14px rgba(90, 60, 30, 0.08);
+      text-align: center;
+    }
+
+    .need-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 18px rgba(90,60,30,0.16);
+    }
+
+    .need-icon {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      line-height: 1;
+    }
+
+    .need-arrow {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .dir-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .dir-badge-north {
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      border: 3px solid #fff;
+      outline: 2px solid #7b4b2a;
+    }
+
+    .dir-badge-south {
+      background: linear-gradient(135deg, #4aa3df, #173f68);
+      border: 3px solid #fff;
+      outline: 2px solid #173f68;
+    }
+
+    .dir-double {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dir-double .dir-badge {
+      width: 34px;
+      height: 34px;
+      font-size: 18px;
+    }
+
+    .need-card-go .need-arrow { color: #7b4b2a; }
+    .need-card-back .need-arrow { color: #173f68; }
+    .need-card-both .need-arrow { color: #a85510; }
+
+    .need-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #2b2b2b;
+    }
+
+    .need-sub {
+      font-size: 13px;
+      font-weight: 800;
+      color: #745b49;
+      line-height: 1.4;
+    }
+
+    .need-card-go {
+      border-color: #d6c0a0;
+      background: linear-gradient(180deg, #ffffff, #fff8ef);
+    }
+    .need-card-go .need-icon { color: #b8864f; }
+
+    .need-card-back {
+      border-color: #cfe3f8;
+      background: linear-gradient(180deg, #ffffff, #f0f7ff);
+    }
+    .need-card-back .need-icon { color: #1f5f9d; }
+
+    .need-card-both {
+      border-color: #f4d8a0;
+      background: linear-gradient(180deg, #fff8ef, #fbe8c8);
+    }
+    .need-card-both .need-icon { color: #d97722; }
+
+    .need-option input:checked + .need-card-go {
+      border-color: #b8864f;
+      background: linear-gradient(180deg, #fffaf3, #f7efe3);
+      box-shadow: 0 8px 0 #7b4b2a, 0 16px 26px rgba(184, 134, 79, 0.32);
+      transform: translateY(-7px) scale(1.02);
+    }
+    .need-option input:checked + .need-card-go .need-title { color: #7b4b2a; }
+
+    .need-option input:checked + .need-card-back {
+      border-color: #1f5f9d;
+      background: linear-gradient(180deg, #f4f9ff, #dbeaff);
+      box-shadow: 0 8px 0 #173f68, 0 16px 26px rgba(31, 95, 157, 0.32);
+      transform: translateY(-7px) scale(1.02);
+    }
+    .need-option input:checked + .need-card-back .need-title { color: #1f5f9d; }
+
+    .need-option input:checked + .need-card-both {
+      border-color: #d97722;
+      background: linear-gradient(180deg, #fff2dc, #ffd99e);
+      box-shadow: 0 8px 0 #a85510, 0 16px 26px rgba(217, 119, 34, 0.32);
+      transform: translateY(-7px) scale(1.02);
+    }
+    .need-option input:checked + .need-card-both .need-title { color: #a85510; }
+
+    .train-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .train-card-back1 .train-tag { background: #e1f0ff; color: #0f4c81; }
+    .train-card-back2 .train-tag { background: #fff5e1; color: #b8864f; }
+
+    .ticket-eligibility {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: #f4f1ec;
+      color: #5b4b3a;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .ticket-card-full .ticket-eligibility {
+      background: #d8efe3;
+      color: #176c55;
+    }
+
+    .ticket-card-discount .ticket-eligibility {
+      background: #ffe1ec;
+      color: #a92f61;
+    }
+
+    .circle-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0 18px;
+    }
+
+    .circle-option input { display: none; }
+
+    .circle-option span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 110px;
+      min-height: 58px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 3px solid #e7e7e7;
+      background: #ffffff;
+      color: #333;
+      font-size: 17px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.18s;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .circle-option input:checked + span {
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      border-color: #7b4b2a;
+      color: #ffffff;
+      box-shadow: 0 8px 0 #5f351d, 0 16px 26px rgba(123,75,42,0.32);
+      transform: translateY(-7px) scale(1.03);
+    }
+
+    .circle-option span:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 18px rgba(90,60,30,0.16);
+    }
+
+    .circle-option input:checked + span::before {
+      content: "✓";
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: #fff;
+      color: #7b4b2a;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .price-note {
+      display: block;
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 800;
+      opacity: 0.9;
+      line-height: 1.35;
+    }
+
+    .circle-option input:checked + span .price-note { color: #fff9e8; }
+
+    .back-train-box {
+      margin-top: 8px;
+      padding: 12px;
+      border-radius: 20px;
+      background: #f7fbff;
+      border: 2px dashed #cfe3f8;
+    }
+
+    .back-train-box.disabled,
+    .go-train-box.disabled {
+      opacity: 0.42;
+      filter: grayscale(0.35);
+    }
+
+    .back-train-box.disabled .train-card,
+    .go-train-box.disabled .train-card {
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none;
+    }
+
+    .train-card-go1 .train-tag { background: #fff5e1; color: #7b4b2a; }
+    .train-card-go2 .train-tag { background: #ffeaca; color: #b8864f; }
+    .train-card-go3 .train-tag { background: #faead6; color: #5f351d; }
+
+    .train-card-go1 .train-no { background: linear-gradient(135deg, #b8864f, #7b4b2a); }
+    .train-card-go2 .train-no { background: linear-gradient(135deg, #d6b37a, #b8864f); }
+    .train-card-go3 .train-no { background: linear-gradient(135deg, #7b4b2a, #5f351d); }
+
+    .train-option input:checked + .train-card-go1,
+    .train-option input:checked + .train-card-go2,
+    .train-option input:checked + .train-card-go3 {
+      border-color: #b8864f;
+      background: linear-gradient(180deg, #fffaf3, #f7efe3);
+      box-shadow: 0 8px 0 #7b4b2a, 0 16px 26px rgba(184, 134, 79, 0.28);
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .train-option input:checked + .train-card-go1 .train-fare,
+    .train-option input:checked + .train-card-go2 .train-fare,
+    .train-option input:checked + .train-card-go3 .train-fare {
+      background: #7b4b2a;
+      color: #fff;
+    }
+
+    .train-card-back3 .train-tag { background: #d8f0e2; color: #176c55; }
+    .train-card-back3 .train-no { background: linear-gradient(135deg, #2e9d7a, #176c55); }
+
+    .train-option input:checked + .train-card-back3 {
+      border-color: #2e9d7a;
+      background: linear-gradient(180deg, #f0fff9, #dff5ec);
+      box-shadow: 0 8px 0 #176c55, 0 16px 26px rgba(46, 157, 122, 0.28);
+    }
+
+    .train-option input:checked + .train-card-back3 .train-fare {
+      background: #2e9d7a;
+      color: #fff;
+    }
+
+    .train-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 10px 0 8px;
+    }
+
+    .train-option input {
+      display: none;
+    }
+
+    .train-card {
+      display: block;
+      border-radius: 20px;
+      padding: 14px 12px;
+      border: 3px solid #d7e4f3;
+      background: #ffffff;
+      cursor: pointer;
+      transition: .18s;
+      box-shadow: 0 6px 14px rgba(30, 60, 100, 0.08);
+      text-align: center;
+    }
+
+    .train-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px rgba(30, 60, 100, 0.14);
+    }
+
+    .train-no {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .train-card-back1 .train-no {
+      background: linear-gradient(135deg, #0f4c81, #0b2f55);
+    }
+
+    .train-card-back2 .train-no {
+      background: linear-gradient(135deg, #4aa3df, #1f78b4);
+    }
+
+    .train-time {
+      display: block;
+      font-size: 20px;
+      font-weight: 900;
+      color: #263544;
+      margin-bottom: 8px;
+    }
+
+    .train-fare {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #eef4fb;
+      color: #1f5f9d;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .train-option input:checked + .train-card {
+      border-color: #1f5f9d;
+      background: linear-gradient(180deg, #f4f9ff, #e8f2ff);
+      box-shadow: 0 8px 0 #173f68, 0 16px 26px rgba(31, 95, 157, 0.28);
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .train-option input:checked + .train-card .train-time {
+      color: #123b63;
+    }
+
+    .train-option input:checked + .train-card .train-fare {
+      background: #1f5f9d;
+      color: #fff;
+    }
+
+    .train-option input:checked + .train-card-back2 {
+      border-color: #4aa3df;
+      background: linear-gradient(180deg, #f2fbff, #dff3ff);
+      box-shadow: 0 8px 0 #1f78b4, 0 16px 26px rgba(31, 120, 180, 0.28);
+    }
+
+    .train-option input:checked + .train-card-back2 .train-fare {
+      background: #1f78b4;
+      color: #fff;
+    }
+
+    .ticket-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 12px;
+      margin: 10px 0 18px;
+    }
+
+    .ticket-option {
+      display: flex;
+      width: 100%;
+    }
+
+    .ticket-option input {
+      display: none;
+    }
+
+    .ticket-card {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      width: 100%;
+      min-height: 160px;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 3px solid #ead8c0;
+      background: #ffffff;
+      cursor: pointer;
+      transition: .18s;
+      box-shadow: 0 6px 14px rgba(90, 60, 30, 0.08);
+    }
+
+    .ticket-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      letter-spacing: 6px;
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      padding: 10px 0;
+      line-height: 1.1;
+    }
+
+    .ticket-label-full {
+      background: linear-gradient(180deg, #2e9d7a, #176c55);
+    }
+
+    .ticket-label-senior {
+      background: linear-gradient(180deg, #b97cdb, #6b3897);
+    }
+
+    .ticket-label-love {
+      background: linear-gradient(180deg, #ec6f9a, #c93f73);
+    }
+
+    .ticket-label-child {
+      background: linear-gradient(180deg, #ffb147, #e88515);
+    }
+
+    .ticket-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 12px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .ticket-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px rgba(90, 60, 30, 0.14);
+    }
+
+    .ticket-name {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 21px;
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+    }
+
+    .ticket-card-full {
+      border-color: #bfe6d8;
+      background: linear-gradient(180deg, #f4fffb, #e6f8f1);
+    }
+
+    .ticket-card-full .ticket-name {
+      background: linear-gradient(135deg, #2e9d7a, #176c55);
+    }
+
+    .ticket-card-full .ticket-note {
+      background: #dff5ec;
+      color: #176c55;
+    }
+
+    .ticket-option input:checked + .ticket-card-full {
+      border-color: #2e9d7a;
+      background: linear-gradient(180deg, #f0fff9, #dff5ec);
+      box-shadow: 0 8px 0 #176c55, 0 16px 26px rgba(46, 157, 122, 0.28);
+    }
+
+    .ticket-option input:checked + .ticket-card-full .ticket-note {
+      background: #2e9d7a;
+      color: #fff;
+    }
+
+    .ticket-card-discount {
+      border-color: #f5bfd0;
+      background: linear-gradient(180deg, #fff7fb, #ffeaf2);
+    }
+
+    .ticket-card-discount .ticket-name {
+      background: linear-gradient(135deg, #ec6f9a, #c93f73);
+    }
+
+    .ticket-card-discount .ticket-note {
+      background: #ffe1ec;
+      color: #a92f61;
+    }
+
+    .ticket-option input:checked + .ticket-card-discount {
+      border-color: #ec6f9a;
+      background: linear-gradient(180deg, #fff1f7, #ffdce9);
+      box-shadow: 0 8px 0 #c93f73, 0 16px 26px rgba(201, 63, 115, 0.28);
+    }
+
+    .ticket-option input:checked + .ticket-card-discount .ticket-note {
+      background: #ec6f9a;
+      color: #fff;
+    }
+
+    .ticket-price {
+      display: block;
+      font-size: 20px;
+      font-weight: 900;
+      color: #263544;
+      line-height: 1.5;
+    }
+
+    .ticket-note {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #fff8e8;
+      color: #7b4b2a;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .ticket-option input:checked + .ticket-card {
+      border-color: #b8864f;
+      background: linear-gradient(180deg, #fffaf3, #f7efe3);
+      box-shadow: 0 8px 0 #7b4b2a, 0 16px 26px rgba(184, 134, 79, 0.28);
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .ticket-option input:checked + .ticket-card .ticket-note {
+      background: #b8864f;
+      color: #fff;
+    }
+
+    .name-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 10px 0 14px;
+    }
+
+    .name-option {
+      display: flex;
+      width: 100%;
+    }
+
+    .name-option input { display: none; }
+
+    .name-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      min-height: 120px;
+      border-radius: 20px;
+      padding: 14px 12px;
+      border: 3px solid #e7e7e7;
+      background: #ffffff;
+      cursor: pointer;
+      transition: .18s;
+      box-shadow: 0 6px 14px rgba(90, 60, 30, 0.08);
+      text-align: center;
+    }
+
+    .name-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 18px rgba(90,60,30,0.16);
+    }
+
+    .name-card-register {
+      border-color: #cfe3f8;
+      background: linear-gradient(180deg, #ffffff, #f0f7ff);
+    }
+
+    .name-card-custom {
+      border-color: #ead8c0;
+      background: linear-gradient(180deg, #ffffff, #fff8ef);
+    }
+
+    .name-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .name-card-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #2b2b2b;
+    }
+
+    .name-card-sub {
+      font-size: 13px;
+      font-weight: 800;
+      color: #745b49;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .name-option input:checked + .name-card-register {
+      border-color: #1f5f9d;
+      background: linear-gradient(180deg, #f4f9ff, #dbeaff);
+      box-shadow: 0 8px 0 #173f68, 0 16px 26px rgba(31, 95, 157, 0.28);
+      transform: translateY(-5px) scale(1.02);
+    }
+
+    .name-option input:checked + .name-card-register .name-card-title { color: #1f5f9d; }
+    .name-option input:checked + .name-card-register .name-card-sub { color: #1f5f9d; }
+
+    .name-option input:checked + .name-card-custom {
+      border-color: #b8864f;
+      background: linear-gradient(180deg, #fffaf3, #f7efe3);
+      box-shadow: 0 8px 0 #7b4b2a, 0 16px 26px rgba(184, 134, 79, 0.28);
+      transform: translateY(-5px) scale(1.02);
+    }
+
+    .name-option input:checked + .name-card-custom .name-card-title { color: #7b4b2a; }
+
+    .passengerName.hidden-name-input {
+      display: none;
+    }
+
+    .phase {
+      animation: phaseSlide 0.32s ease-out;
+    }
+
+    .phase-locked {
+      display: none !important;
+    }
+
+    @keyframes phaseSlide {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .name-options { grid-template-columns: 1fr; }
+    }
+
+    .document-box {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      background: #fff8e8;
+      border: 2px dashed #d6b37a;
+    }
+
+    .passenger-card {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 24px;
+      background: #fafafa;
+      border: 2px solid #eeeeee;
+      position: relative;
+    }
+
+    .step-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 4px 0 16px;
+      padding: 10px 8px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fff8ef, #f0f7ff);
+      border: 2px dashed #b8864f;
+    }
+
+    .step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #d6b37a;
+      font-size: 15px;
+      font-weight: 900;
+      color: #7b4b2a;
+      box-shadow: 0 3px 0 #d6c0a0;
+    }
+
+    .step-arrow {
+      font-size: 18px;
+      font-weight: 900;
+      color: #b8864f;
+    }
+
+    .hsr-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      box-shadow: 0 2px 4px rgba(123,75,42,0.3);
+    }
+
+    label .hsr-icon {
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .passenger-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #1f5f9d;
+      margin-bottom: 10px;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      border: none;
+      background: #ffefef;
+      color: #bf2525;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #745b49;
+      background: #fff8e8;
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .small-hint {
+      margin-top: -8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #5b6f86;
+      background: #eef6ff;
+      border-radius: 14px;
+      padding: 10px;
+      font-weight: 800;
+    }
+
+    .add-btn {
+      width: 100%;
+      border: 3px dashed #b8864f;
+      background: #fffaf3;
+      color: #7b4b2a;
+      border-radius: 22px;
+      padding: 16px;
+      font-size: 19px;
+      font-weight: 900;
+      margin-top: 18px;
+      cursor: pointer;
+    }
+
+    .phase-mode {
+      margin-bottom: 8px;
+    }
+
+    .mode-prompt {
+      font-size: 16px;
+      font-weight: 900;
+      color: #1f5f9d;
+      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #eef6ff;
+      border-left: 5px solid #1f5f9d;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .mode-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px 12px;
+      min-height: 120px;
+      border-radius: 20px;
+      border: 3px solid #d6c0a0;
+      background: linear-gradient(180deg, #ffffff, #fff8ef);
+      cursor: pointer;
+      transition: .18s;
+      font-family: inherit;
+      text-align: center;
+      width: 100%;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 18px rgba(90,60,30,0.16);
+    }
+
+    .mode-card-copy {
+      border-color: #cfe3f8;
+      background: linear-gradient(180deg, #ffffff, #f0f7ff);
+    }
+
+    .mode-card-copy:hover {
+      border-color: #1f5f9d;
+    }
+
+    .mode-card-custom {
+      border-color: #ead8c0;
+    }
+
+    .mode-card-custom:hover {
+      border-color: #b8864f;
+    }
+
+    .mode-icon {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .mode-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: #2b2b2b;
+    }
+
+    .mode-sub {
+      font-size: 13px;
+      font-weight: 800;
+      color: #745b49;
+    }
+
+    @media (max-width: 680px) {
+      .mode-options { grid-template-columns: 1fr; }
+    }
+
+    .submit-btn, .query-btn {
+      width: 100%;
+      border: none;
+      background: linear-gradient(135deg, #b8864f, #7b4b2a);
+      color: #fff;
+      border-radius: 24px;
+      padding: 18px;
+      font-size: 23px;
+      font-weight: 900;
+      margin-top: 26px;
+      cursor: pointer;
+      box-shadow: 0 10px 0 #5f351d, 0 18px 30px rgba(123,75,42,0.36);
+      transform: translateY(-5px);
+      transition: 0.18s;
+    }
+
+    .submit-btn:hover, .query-btn:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 13px 0 #5f351d, 0 22px 34px rgba(123,75,42,0.42);
+    }
+
+    .submit-btn:active, .query-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 0 #5f351d, 0 10px 18px rgba(123,75,42,0.3);
+    }
+
+    .submit-btn:disabled, .query-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 6px 12px rgba(123,75,42,0.22);
+    }
+
+    .success, .error {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .success {
+      background: #e9f8ef;
+      color: #146b38;
+    }
+
+    .success-detail {
+      margin-top: 14px;
+      text-align: left;
+    }
+
+    .success-detail-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #146b38;
+      margin: 8px 0 10px;
+      text-align: center;
+    }
+
+    .success-detail-card {
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 2px solid #bfe8cf;
+      color: #263544;
+      line-height: 1.8;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .success-detail-card strong {
+      color: #1f5f9d;
+      font-size: 18px;
+    }
+
+    .success-total {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      background: #fff8e8;
+      color: #7b4b2a;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .error {
+      background: #fff0f0;
+      color: #b22222;
+    }
+
+    .summary {
+      display: none;
+      margin-top: 22px;
+      padding: 18px;
+      border-radius: 22px;
+      background: #fffaf3;
+      border: 2px dashed #b8864f;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.8;
+    }
+
+    .result-card {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 22px;
+      background: #f7fbff;
+      border: 2px solid #d7eaff;
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    .result-card-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: #1f5f9d;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 900;
+      margin: 4px 4px 4px 0;
+    }
+
+    .paid { background: #e9f8ef; color: #146b38; }
+    .unpaid { background: #fff0f0; color: #b22222; }
+    .taken { background: #e9f8ef; color: #146b38; }
+    .untaken { background: #fff8e8; color: #a56400; }
+
+    .money-text {
+      font-size: 19px;
+      font-weight: 900;
+      color: #7b4b2a;
+    }
+
+    .doc-link {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #eef6ff;
+      color: #1f5f9d;
+      text-decoration: none;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .seat-note {
+      margin: 14px 0 6px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fff8e8, #fff3d6);
+      border: 2px dashed #b8864f;
+      color: #7b4b2a;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.7;
+    }
+
+    .important-notice {
+      background: linear-gradient(135deg, #fff8e8, #ffe8c2);
+      border: 3px solid #d97722;
+      border-radius: 22px;
+      padding: 18px 20px;
+      margin: 18px 0 22px;
+      box-shadow: 0 8px 18px rgba(217, 119, 34, 0.22);
+    }
+
+    .notice-title {
+      font-size: 21px;
+      font-weight: 900;
+      color: #a85510;
+      margin-bottom: 14px;
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 2px dashed #d97722;
+      letter-spacing: 2px;
+    }
+
+    .notice-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 10px 0;
+      padding: 12px 14px;
+      background: #ffffff;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #3a2a20;
+      line-height: 1.65;
+      border: 2px solid #ffeab8;
+    }
+
+    .notice-item strong {
+      color: #a85510;
+      font-weight: 900;
+    }
+
+    .notice-icon {
+      font-size: 26px;
+      flex-shrink: 0;
+      line-height: 1.3;
+    }
+
+    .seat-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #e9f8ef, #d8f0e2);
+      border: 2px solid #2e9d7a;
+      flex-wrap: wrap;
+    }
+
+    .seat-box.pending {
+      background: linear-gradient(135deg, #fff8e8, #fff3d6);
+      border-color: #b8864f;
+    }
+
+    .seat-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #2e9d7a;
+      color: #fff;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .seat-box.pending .seat-icon {
+      background: #b8864f;
+    }
+
+    .seat-info {
+      font-size: 16px;
+      font-weight: 900;
+      color: #146b38;
+    }
+
+    .seat-box.pending .seat-info {
+      color: #7b4b2a;
+    }
+
+    .seat-info strong {
+      display: inline-block;
+      padding: 4px 12px;
+      margin: 0 4px;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #146b38;
+      font-size: 18px;
+      border: 2px solid #2e9d7a;
+    }
+
+
+    /* 全票淺綠色系 */
+    .ticket-card-full {
+      border-color: #bfe6d8 !important;
+      background: linear-gradient(180deg, #f4fffb, #e6f8f1) !important;
+    }
+
+    .ticket-card-full .ticket-name {
+      background: linear-gradient(135deg, #2e9d7a, #176c55) !important;
+    }
+
+    .ticket-card-full .ticket-note {
+      background: #dff5ec !important;
+      color: #176c55 !important;
+    }
+
+    .ticket-option input:checked + .ticket-card-full {
+      border-color: #2e9d7a !important;
+      background: linear-gradient(180deg, #f0fff9, #dff5ec) !important;
+      box-shadow: 0 8px 0 #176c55, 0 16px 26px rgba(46, 157, 122, 0.28) !important;
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .ticket-option input:checked + .ticket-card-full .ticket-note {
+      background: #2e9d7a !important;
+      color: #fff !important;
+    }
+
+    /* 敬老票 - 紫色系 */
+    .ticket-card-senior {
+      border-color: #d9b8ee !important;
+      background: linear-gradient(180deg, #faf4ff, #f0e5fb) !important;
+    }
+
+    .ticket-card-senior .ticket-eligibility {
+      background: #ede1fa !important;
+      color: #6b3897 !important;
+    }
+
+    .ticket-card-senior .ticket-note {
+      background: #ede1fa !important;
+      color: #6b3897 !important;
+    }
+
+    .ticket-option input:checked + .ticket-card-senior {
+      border-color: #b97cdb !important;
+      background: linear-gradient(180deg, #faf4ff, #e9d6f9) !important;
+      box-shadow: 0 8px 0 #6b3897, 0 16px 26px rgba(107, 56, 151, 0.28) !important;
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .ticket-option input:checked + .ticket-card-senior .ticket-note {
+      background: #b97cdb !important;
+      color: #fff !important;
+    }
+
+    /* 愛心票 - 粉紅色系 */
+    .ticket-card-love {
+      border-color: #f5bfd0 !important;
+      background: linear-gradient(180deg, #fff7fb, #ffeaf2) !important;
+    }
+
+    .ticket-card-love .ticket-eligibility {
+      background: #ffe1ec !important;
+      color: #a92f61 !important;
+    }
+
+    .ticket-card-love .ticket-note {
+      background: #ffe1ec !important;
+      color: #a92f61 !important;
+    }
+
+    .ticket-option input:checked + .ticket-card-love {
+      border-color: #ec6f9a !important;
+      background: linear-gradient(180deg, #fff1f7, #ffdce9) !important;
+      box-shadow: 0 8px 0 #c93f73, 0 16px 26px rgba(201, 63, 115, 0.28) !important;
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .ticket-option input:checked + .ticket-card-love .ticket-note {
+      background: #ec6f9a !important;
+      color: #fff !important;
+    }
+
+    /* 孩童票 - 橘黃色系 */
+    .ticket-card-child {
+      border-color: #f5d18a !important;
+      background: linear-gradient(180deg, #fff8e8, #fff0c8) !important;
+    }
+
+    .ticket-card-child .ticket-eligibility {
+      background: #fff0c8 !important;
+      color: #a16400 !important;
+    }
+
+    .ticket-card-child .ticket-note {
+      background: #fff0c8 !important;
+      color: #a16400 !important;
+    }
+
+    .ticket-option input:checked + .ticket-card-child {
+      border-color: #ffb147 !important;
+      background: linear-gradient(180deg, #fffaeb, #ffe8a8) !important;
+      box-shadow: 0 8px 0 #b06a00, 0 16px 26px rgba(176, 106, 0, 0.28) !important;
+      transform: translateY(-7px) scale(1.02);
+    }
+
+    .ticket-option input:checked + .ticket-card-child .ticket-note {
+      background: #ffb147 !important;
+      color: #fff !important;
+    }
+
+    .document-box {
+      background: #fff1f7 !important;
+      border: 2px dashed #ec6f9a !important;
+    }
+
+    .document-box label {
+      color: #a92f61;
+    }
+
+    .document-box .small-hint {
+      background: #ffe1ec !important;
+      color: #a92f61 !important;
+    }
+
+    @media (max-width: 680px) {
+      .poster-top { padding: 8px; }
+
+      .poster-top img {
+        max-height: 360px;
+        border-radius: 14px;
+      }
+
+      .hero-layout {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .hsr-box {
+        max-width: 260px;
+        margin: 0 auto;
+      }
+
+      .hero-title {
+        font-size: 29px;
+        text-align: center;
+      }
+
+      .hero-subtitle {
+        font-size: 16px;
+        text-align: center;
+      }
+
+      .route-card { grid-template-columns: 72px 1fr; }
+
+      .route-label { font-size: 23px; }
+
+      .station strong { font-size: 24px; }
+
+      .station-row { grid-template-columns: 1fr 34px 1fr; }
+
+      .arrow { font-size: 28px; }
+
+      .mode-tabs { grid-template-columns: 1fr; }
+
+      .train-options { grid-template-columns: 1fr; }
+
+      .ticket-options { grid-template-columns: 1fr; }
+
+      .need-options { grid-template-columns: 1fr; }
+
+      .circle-option span {
+        min-width: calc(50vw - 34px);
+        font-size: 16px;
+      }
+
+      input, textarea { font-size: 18px; }
+    }
+
+    /* ===== 選中的按鈕：整個塗滿深色＋白字＋粗框＋右上角「✔ 已選」，一眼看得出來 ===== */
+    .name-option input:checked + .name-card,
+    .need-option input:checked + .need-card,
+    .ticket-option input:checked + .ticket-card,
+    .train-option input:checked + .train-card {
+      position: relative;
+      border-width: 3px !important;
+      color: #fff !important;
+    }
+    .name-option input:checked + .name-card *,
+    .need-option input:checked + .need-card *,
+    .ticket-option input:checked + .ticket-card *,
+    .train-option input:checked + .train-card * {
+      color: #fff !important;
+      font-weight: 900 !important;
+    }
+    .name-option input:checked + .name-card-register { background: #1f5f9d !important; border-color: #123b63 !important; }
+    .name-option input:checked + .name-card-custom { background: #8a5a2b !important; border-color: #5c3a1a !important; }
+    .need-option input:checked + .need-card-go { background: #8a5a2b !important; border-color: #5c3a1a !important; }
+    .need-option input:checked + .need-card-back { background: #1f5f9d !important; border-color: #123b63 !important; }
+    .need-option input:checked + .need-card-both { background: #d97722 !important; border-color: #9c4f0c !important; }
+    .ticket-option input:checked + .ticket-card-full { background: #2e9d7a !important; border-color: #176c55 !important; }
+    .ticket-option input:checked + .ticket-card-senior { background: #8e4fbf !important; border-color: #6b3897 !important; }
+    .ticket-option input:checked + .ticket-card-love { background: #d94f82 !important; border-color: #a8325f !important; }
+    .ticket-option input:checked + .ticket-card-child { background: #e08a00 !important; border-color: #a86400 !important; }
+    .train-option input:checked + .train-card { background: #1f5f9d !important; border-color: #123b63 !important; }
+    /* 卡片裡原本有底色的小標籤，選中後改白底深字 */
+    .need-option input:checked + .need-card .dir-badge,
+    .ticket-option input:checked + .ticket-card .ticket-label,
+    .ticket-option input:checked + .ticket-card .ticket-eligibility,
+    .ticket-option input:checked + .ticket-card .ticket-note {
+      background: #fff !important;
+      color: #2e2a26 !important;
+    }
+    .name-option input:checked + .name-card::after,
+    .need-option input:checked + .need-card::after,
+    .ticket-option input:checked + .ticket-card::after,
+    .train-option input:checked + .train-card::after {
+      content: '✔ 已選';
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #fff;
+      color: #16a34a;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+
+    /* 海報下載完之前先放一塊佔位（不會先閃別張圖）；載好或讀不到時 .poster-ready 收掉 */
+    #posterImg:not([src]) { display: none; }
+    .poster-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 430px;
+      border-radius: 18px;
+      background: linear-gradient(100deg, #f1e3cd 30%, #fbf4e9 50%, #f1e3cd 70%);
+      background-size: 300% 100%;
+      animation: posterShimmer 1.4s ease-in-out infinite;
+      color: #a07a4f;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .poster-top.poster-ready .poster-loading { display: none; }
+    @keyframes posterShimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: 0 0; }
+    }
+
+    /* 車次資料還在讀／讀不到 */
+    .route-loading, .load-error {
+      grid-column: 1 / -1;
+      padding: 22px 16px;
+      border-radius: 20px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.7;
+    }
+    .route-loading { background: #f7f2ea; color: #8a6a45; }
+    .load-error { background: #fff0f0; color: #b22222; }
+    .load-error .query-btn { margin-top: 12px; }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="ticket">
+
+      <div class="poster-top">
+        <img id="posterImg"
+          src="https://drive.google.com/thumbnail?id=1pfk9qaZ3FkOBmVpJqZz6wKI5aSceF5_q&sz=w1600"
+          alt="活動海報"
+          onload="this.parentNode.classList.add('poster-ready');"
+          onerror="this.parentNode.classList.add('poster-ready');this.style.display='none';document.getElementById('posterFallback').style.display='block';"
+        >
+        <div class="poster-loading">海報載入中…</div>
+        <div id="posterFallback" class="poster-fallback">
+          海報暫時讀不到。<br>
+          請確認 Google Drive 圖片權限已設為「知道連結的任何人可檢視」。
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-layout">
+          <div>
+            <div class="hero-title" id="heroTitle">高鐵車票登記</div>
+            <div class="hero-subtitle" id="heroSubtitle">去程只有一個車次；回程有兩個車次，請依需求選擇。</div>
+          </div>
+
+          <div class="hsr-box">
+            <svg class="hsr-svg" viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg" aria-label="高鐵卡通插圖">
+              <defs>
+                <linearGradient id="skyGrad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#f8fbff"/>
+                  <stop offset="100%" stop-color="#e9f3ff"/>
+                </linearGradient>
+                <linearGradient id="trainBody" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="100%" stop-color="#f2f6fb"/>
+                </linearGradient>
+                <linearGradient id="orangeStripe" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#f2a24a"/>
+                  <stop offset="100%" stop-color="#d97722"/>
+                </linearGradient>
+              </defs>
+
+              <rect x="0" y="0" width="900" height="250" rx="22" fill="url(#skyGrad)"/>
+
+              <g>
+                <rect x="40" y="198" width="820" height="8" rx="4" fill="#7589a3"/>
+                <rect x="52" y="214" width="796" height="8" rx="4" fill="#4f637d"/>
+              </g>
+
+              <g transform="translate(70,78)">
+                <path d="M0,72 C18,16 75,0 170,0 H505 C585,0 648,15 700,58 L735,90 C744,98 746,112 738,120 C730,129 716,132 704,132 H54 C20,132 -6,104 0,72 Z"
+                      fill="url(#trainBody)" stroke="#d7e0eb" stroke-width="4"/>
+
+                <path d="M123,46 H495 C557,46 602,55 639,84 L656,98 H120 C108,98 99,89 99,77 C99,60 108,46 123,46 Z"
+                      fill="#316cae"/>
+
+                <rect x="114" y="110" width="555" height="10" rx="5" fill="url(#orangeStripe)"/>
+
+                <g fill="#f9fcff">
+                  <rect x="145" y="57" width="58" height="22" rx="7"/>
+                  <rect x="217" y="57" width="58" height="22" rx="7"/>
+                  <rect x="289" y="57" width="58" height="22" rx="7"/>
+                  <rect x="361" y="57" width="58" height="22" rx="7"/>
+                  <rect x="433" y="57" width="58" height="22" rx="7"/>
+                  <rect x="505" y="57" width="58" height="22" rx="7"/>
+                </g>
+
+                <circle cx="176" cy="138" r="12" fill="#5f6d7d"/>
+                <circle cx="525" cy="138" r="12" fill="#5f6d7d"/>
+                <circle cx="632" cy="138" r="12" fill="#5f6d7d"/>
+              </g>
+
+              <g transform="translate(640,28)">
+                <rect x="0" y="0" width="170" height="56" rx="14" fill="#fff7e8" stroke="#d6b37a" stroke-width="3"/>
+                <text x="85" y="23" text-anchor="middle" font-size="16" font-weight="900" fill="#7b4b2a">台灣高鐵</text>
+                <text x="85" y="42" text-anchor="middle" font-size="13" font-weight="700" fill="#1f5f9d">左營 ⇄ 台北</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+<div id="goRouteHint" class="back-box-title" style="display:none;">去程有多個車次，可依需求挑選</div>
+        <div id="goRouteContainer" class="route-box"><div class="route-loading">🚄 車次資料載入中…</div></div>
+
+        <div id="backRouteHint" class="back-box-title" style="display:none;">回程有多個車次，請擇一選擇</div>
+        <div id="backRouteContainer" class="back-box"></div>
+
+        <div class="important-notice">
+          <div class="notice-title">⚠ 登記前請詳閱</div>
+          <div class="notice-item">
+            <span class="notice-icon">📝</span>
+            <span><strong>登記實名制</strong>　登記後我會幫大家統一購票，<strong>車票一經購買無法退票</strong>，請確認可以出席再登記 🙏</span>
+          </div>
+          <div class="notice-item">
+            <span class="notice-icon">💰</span>
+            <span><strong>並請盡速付款</strong>（轉帳 or 付現 皆可）</span>
+          </div>
+          <div class="notice-item">
+            <span class="notice-icon">📅</span>
+            <span><strong>登記期限</strong>　即日起 ～ <strong>11/7（六）23:59</strong> 截止</span>
+          </div>
+        </div>
+
+        <div class="mode-tabs">
+          <button type="button" id="tabRegister" class="mode-btn" onclick="showSection('register')">我要登記</button>
+          <button type="button" id="tabQuery" class="mode-btn" onclick="showSection('query')">查詢登記 / 查詢車位</button>
+        </div>
+
+        <div id="registerSection" class="section">
+          <form id="ticketForm">
+            <div class="section-title"><span class="step-number">1</span>登記人資料</div>
+
+            <div class="hero-input">
+              <div class="hero-input-label">👤 登記人姓名</div>
+              <div class="hero-input-hint">⚠ 這是用來查詢及聯絡的關鍵欄位，請填寫真實姓名</div>
+              <input type="text" id="registerName" class="hero-input-field" required placeholder="請輸入您的姓名" oninput="syncFirstPassengerName(); revealStep2()" onkeydown="if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); revealStep2(); }">
+            </div>
+
+            <div id="step2Wrap" style="display:none">
+            <div class="section-title"><span class="step-number">2</span>搭車人資料</div>
+
+            <div class="step-flow">
+              <span class="step"><span class="hsr-icon">🚄</span>車票需求</span>
+              <span class="step-arrow">→</span>
+              <span class="step"><span class="hsr-icon">🚄</span>回程車次</span>
+              <span class="step-arrow">→</span>
+              <span class="step"><span class="hsr-icon">🚄</span>票種</span>
+            </div>
+
+            <div id="passengerList"></div>
+
+            <button type="button" class="add-btn" id="addPassengerBtn" onclick="addPassenger()" style="display:none;">＋ 新增一位搭車人</button>
+
+            <button type="button" class="add-btn" id="noteToggleBtn" onclick="openNote()">📝 有需要備註，請點這裡</button>
+            <div id="noteBox" style="display:none">
+              <label>備註</label>
+              <textarea id="note" placeholder="例如：同行家人、特殊需求、其他備註"></textarea>
+            </div>
+
+            <div class="hint">
+              ※ 選擇敬老票、愛心票、孩童票時，系統會出現證件上傳欄位。<br>
+              ※ 證件非必填，不方便上傳也可以直接傳 LINE 給小秘書。<br>
+              ※ 送出後可用「登記人姓名」查詢登記 / 車位。
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">送出登記</button>
+            </div>
+
+            <div class="success" id="successBox"></div>
+            <div class="error" id="errorBox"></div>
+          </form>
+        </div>
+
+        <div id="querySection" class="section">
+          <div class="section-title">查詢登記 / 車位</div>
+
+          <label>登記人姓名</label>
+          <input type="text" id="searchName" placeholder="請輸入登記人姓名">
+
+          <button type="button" id="queryBtn" class="query-btn" onclick="queryData()">查詢登記 / 車位</button>
+
+          <div class="seat-note">
+            <strong>📌 車廂 / 座位查詢說明</strong><br>
+            ※ 等小秘書到高鐵確認購買後，才會拿到車廂與座位號。<br>
+            ※ 拿到票後會在後台填入，您再用「登記人姓名」查詢即可看到自己的座位。
+          </div>
+
+          <div class="error" id="queryErrorBox"></div>
+          <div class="summary" id="summaryBox"></div>
+          <div id="resultBox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let passengerCount = 0;
+    window.appConfig = null;
+
+    // ── 呼叫後端 ──
+    // 放在 GitHub Pages：用 fetch 打下面這個 Apps Script 網址；放在 Apps Script 裡（舊網址）：照舊用 google.script.run
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyPA9vkFre-Rungx12dbEVFsrWlxU00NPlx-QAAUoz6tubHGB3Ms9Yt6iaiGpiHYfT2NQ/exec';
+
+    function onAppsScriptPage() {
+      return typeof google !== 'undefined' && google.script && google.script.run;
+    }
+
+    function callServer(action, payload, timeoutMs) {
+      payload = payload || {};
+      if (onAppsScriptPage()) {
+        return new Promise(function(resolve, reject) {
+          const run = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+          if (action === 'getConfig') run.getConfig();
+          else if (action === 'query') run.queryTicketsByName(payload.name);
+          else if (action === 'submit') run.submitTicketForm(payload.formData);
+        });
+      }
+
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(function() { ctrl.abort(); }, timeoutMs || 30000) : null;
+      const isGet = action === 'getConfig';
+      // POST 用預設的 text/plain，瀏覽器才不會先送 OPTIONS 預檢（Apps Script 不回預檢）
+      const opts = isGet ? { method: 'GET' } : { method: 'POST', body: JSON.stringify(Object.assign({ action: action }, payload)) };
+      if (ctrl) opts.signal = ctrl.signal;
+
+      return fetch(isGet ? API_URL + '?action=' + action : API_URL, opts)
+        .then(function(r) { return r.text(); })
+        .catch(function(err) {
+          const timeout = err && err.name === 'AbortError';
+          const e = new Error(timeout ? '連線逾時，網路好像比較慢' : '網路連線失敗，請確認網路後再試一次');
+          e.code = timeout ? 'timeout' : 'network';
+          throw e;
+        })
+        .then(function(text) {
+          let res = null;
+          try { res = JSON.parse(text); } catch (x) {}
+          if (!res) throw new Error('系統忙碌中，請稍後再試');
+          if (!res.ok) throw new Error(res.error || '系統忙碌中，請稍後再試');
+          return res.data;
+        })
+        .finally(function() { if (timer) clearTimeout(timer); });
+    }
+
+    function buildTrainList(c, prefix) {
+      const list = [];
+      for (let i = 1; i <= 3; i++) {
+        const no = String(c[prefix + i + '_車次'] || '').trim();
+        if (!no) continue;
+        list.push({
+          index: i,
+          no: no,
+          date: String(c[prefix + i + '_日期'] || '').trim(),
+          depart: String(c[prefix + i + '_出發時間'] || '').trim(),
+          arrive: String(c[prefix + i + '_抵達時間'] || '').trim(),
+          discount: String(c[prefix + i + '_折扣文字'] || '').trim(),
+          price: Number(c[prefix + i + '_全票價']) || 0,
+          tag: String(c[prefix + i + '_標籤'] || '').trim()
+        });
+      }
+      return list;
+    }
+
+    function getFallbackConfig() {
+      const c = {
+        '海報_DriveID': '',
+        '網頁標題': '高鐵車票登記',
+        '網頁副標': '請依需求選擇去程與回程車票。',
+        '去程_出發站': '左營',
+        '去程_抵達站': '台北',
+        '去程_方向': '北上',
+        '回程_方向': '南下',
+        '去程1_車次': '818', '去程1_日期': '', '去程1_出發時間': '10:25', '去程1_抵達時間': '12:39',
+        '去程1_折扣文字': '6折', '去程1_全票價': 890, '去程1_標籤': '',
+        '回程1_車次': '675', '回程1_日期': '', '回程1_出發時間': '18:46', '回程1_抵達時間': '20:45',
+        '回程1_折扣文字': '7折', '回程1_全票價': 1040, '回程1_標籤': '早點・可以回道場',
+        '回程2_車次': '853', '回程2_日期': '', '回程2_出發時間': '19:11', '回程2_抵達時間': '21:25',
+        '回程2_折扣文字': '6折', '回程2_全票價': 890, '回程2_標籤': '晚班・最便宜',
+        '全票_適用對象': '一般成人',
+        '敬老票_適用對象': '65 歲以上長者',
+        '愛心票_適用對象': '身心障礙者',
+        '孩童票_適用對象': '6 ～ 12 歲兒童',
+        '優待票_單程價': 745
+      };
+      c.goTrains = buildTrainList(c, '去程');
+      c.backTrains = buildTrainList(c, '回程');
+      return c;
+    }
+
+    function applyConfig(config) {
+      let c = config || getFallbackConfig();
+      // 後端傳回時可能沒帶 train 陣列（舊版相容）
+      if (!c.goTrains) c.goTrains = buildTrainList(c, '去程');
+      if (!c.backTrains) c.backTrains = buildTrainList(c, '回程');
+      window.appConfig = c;
+      renderPoster();
+      renderHero();
+      renderTopRoutes();
+    }
+
+    function renderPoster() {
+      const raw = String(window.appConfig['海報_DriveID'] || '').trim();
+      if (!raw) {
+        // 設定表沒填海報：不顯示海報，也別一直停在「海報載入中」
+        const none = document.getElementById('posterImg');
+        if (none) {
+          none.removeAttribute('src');
+          none.parentNode.classList.add('poster-ready');
+        }
+        return;
+      }
+      // 容錯：使用者可能貼 ID、/file/d/ID/view、open?id=ID、uc?id=ID 任何格式
+      let id = raw;
+      const m1 = raw.match(/\/file\/d\/([^\/\?#&]+)/);
+      const m2 = raw.match(/[?&]id=([^&]+)/);
+      if (m1) id = m1[1];
+      else if (m2) id = m2[1];
+      const img = document.getElementById('posterImg');
+      if (img) {
+        const want = 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1600';
+        if (img.getAttribute('src') !== want) {
+          img.style.display = '';
+          const fb = document.getElementById('posterFallback');
+          if (fb) fb.style.display = 'none';
+          img.src = want;
+        }
+      }
+    }
+
+    function renderHero() {
+      const c = window.appConfig;
+      const t = document.getElementById('heroTitle');
+      const s = document.getElementById('heroSubtitle');
+      if (t) t.textContent = c['網頁標題'];
+      if (s) s.textContent = c['網頁副標'];
+    }
+
+    function buildRouteCardHtml(train, direction, idx, totalCount) {
+      const c = window.appConfig;
+      const isGo = direction === 'go';
+      const labelNumerals = ['①', '②', '③'];
+      const labelText = (isGo ? '去程' : '回程') + (totalCount > 1 ? labelNumerals[idx] || '' : '');
+      const from = isGo ? c['去程_出發站'] : c['去程_抵達站'];
+      const to = isGo ? c['去程_抵達站'] : c['去程_出發站'];
+      const cardClass = isGo ? 'go-card' : 'back-card';
+      const dir = isGo ? c['去程_方向'] : c['回程_方向'];
+
+      const dateChip = train.date ? `
+        <span class="train-chip">
+          <span class="chip-label">日期</span>
+          <span class="chip-value">${escapeHtml(train.date)}</span>
+        </span>` : '';
+
+      // 半票（敬老／愛心／孩童）＝「車票設定」的 優待票_單程價
+      const halfPrice = Number(c['優待票_單程價']) || 0;
+      const halfChip = halfPrice ? `
+              <span class="train-chip train-chip-fare">
+                <span class="chip-label">半票</span>
+                <span class="chip-value">${halfPrice}元</span>
+              </span>` : '';
+
+      return `
+        <div class="route-card ${cardClass}">
+          <div class="route-label">${labelText}</div>
+          <div class="route-main">
+            <div class="station-row">
+              <div class="station">
+                <span class="station-small">出發</span>
+                <strong>${escapeHtml(from)}</strong>
+              </div>
+              <div class="arrow">→</div>
+              <div class="station">
+                <span class="station-small">抵達</span>
+                <strong>${escapeHtml(to)}</strong>
+              </div>
+            </div>
+            <div class="train-info-chips">
+              <span class="train-chip">
+                <span class="chip-label">${escapeHtml(dir)}</span>
+                <span class="chip-value">車次 ${escapeHtml(train.no)}</span>
+              </span>
+              ${dateChip}
+              <span class="train-chip">
+                <span class="chip-label">時間</span>
+                <span class="chip-value">${escapeHtml(train.depart)} → ${escapeHtml(train.arrive)}</span>
+              </span>
+              <span class="train-chip train-chip-fare">
+                <span class="chip-label">票價</span>
+                <span class="chip-value">${escapeHtml(train.discount)} ${train.price}元</span>
+              </span>
+              ${halfChip}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTopRoutes() {
+      const c = window.appConfig;
+      const goTrains = c.goTrains || [];
+      const backTrains = c.backTrains || [];
+
+      const goContainer = document.getElementById('goRouteContainer');
+      const backContainer = document.getElementById('backRouteContainer');
+
+      if (goContainer) {
+        goContainer.innerHTML = goTrains.map((t, i) => buildRouteCardHtml(t, 'go', i, goTrains.length)).join('');
+      }
+      if (backContainer) {
+        backContainer.innerHTML = backTrains.map((t, i) => buildRouteCardHtml(t, 'back', i, backTrains.length)).join('');
+      }
+
+      const goHint = document.getElementById('goRouteHint');
+      const backHint = document.getElementById('backRouteHint');
+      if (goHint) goHint.style.display = goTrains.length > 1 ? '' : 'none';
+      if (backHint) backHint.style.display = backTrains.length > 1 ? '' : 'none';
+    }
+
+    // 一開頁就去拿設定（不用 window.onload：那會等海報圖片下載完才開始）
+    loadConfig(1);
+
+    function loadConfig(attempt) {
+      callServer('getConfig', null, 25000).then(function(config) {
+        applyConfig(config);
+        addPassenger();
+        revealStep2();
+      }, function() {
+        // 第一次失敗多半是後端剛睡醒比較慢 → 自動再試一次；兩次都失敗才請對方重新整理（不要秀寫死的舊車次）
+        if (attempt < 2) {
+          loadConfig(attempt + 1);
+          return;
+        }
+        showConfigError();
+      });
+    }
+
+    function showConfigError() {
+      const go = document.getElementById('goRouteContainer');
+      const back = document.getElementById('backRouteContainer');
+      if (go) go.innerHTML = '<div class="load-error">⚠ 車次資料載入失敗（網路可能不穩）<br><button type="button" class="query-btn" onclick="location.reload()">重新整理</button></div>';
+      if (back) back.innerHTML = '';
+      const poster = document.getElementById('posterImg');
+      if (poster && !poster.getAttribute('src')) poster.parentNode.classList.add('poster-ready');
+    }
+
+    function showSection(type) {
+      const registerSection = document.getElementById('registerSection');
+      const querySection = document.getElementById('querySection');
+      const tabRegister = document.getElementById('tabRegister');
+      const tabQuery = document.getElementById('tabQuery');
+
+      if (type === 'register') {
+        registerSection.classList.add('active');
+        querySection.classList.remove('active');
+        tabRegister.classList.add('active');
+        tabQuery.classList.remove('active');
+      } else {
+        registerSection.classList.remove('active');
+        querySection.classList.add('active');
+        tabRegister.classList.remove('active');
+        tabQuery.classList.add('active');
+      }
+    }
+
+    // 備註預設收起來，按按鈕才出現
+    function openNote() {
+      document.getElementById('noteBox').style.display = '';
+      document.getElementById('noteToggleBtn').style.display = 'none';
+      document.getElementById('note').focus();
+    }
+
+    // 登記人姓名填了才出現「2 搭車人資料」以下的內容
+    function revealStep2() {
+      const wrap = document.getElementById('step2Wrap');
+      // 車次設定還沒讀到就先不展開（讀到後 loadConfig 會再叫一次）
+      if (wrap && window.appConfig && document.getElementById('registerName').value.trim()) wrap.style.display = '';
+    }
+
+    function syncFirstPassengerName() {
+      const registerName = document.getElementById('registerName').value.trim();
+      const preview = registerName || '（尚未填寫）';
+
+      // 更新所有搭車人卡片的「同登記人姓名」預覽 + 已選 register 的姓名 input
+      document.querySelectorAll('.passenger-card').forEach(function(card) {
+        const previewEl = card.querySelector('.registerNamePreview');
+        if (previewEl) previewEl.textContent = preview;
+
+        const source = card.querySelector('input[name^="nameSource_"]:checked');
+        if (source && source.value === 'register') {
+          const nameInput = card.querySelector('.passengerName');
+          if (nameInput) nameInput.value = registerName;
+        }
+
+        updatePhaseVisibility(card);
+      });
+    }
+
+    function handleNameSourceChange(input) {
+      const card = input.closest('.passenger-card');
+      const nameInput = card.querySelector('.passengerName');
+
+      if (input.value === 'register') {
+        const registerName = document.getElementById('registerName').value.trim();
+        nameInput.value = registerName;
+        nameInput.readOnly = true;
+        nameInput.classList.add('hidden-name-input');
+      } else {
+        nameInput.readOnly = false;
+        nameInput.classList.remove('hidden-name-input');
+        nameInput.value = '';
+        setTimeout(function() { nameInput.focus(); }, 50);
+      }
+
+      updatePhaseVisibility(card);
+    }
+
+    function updatePhaseVisibility(card) {
+      if (!card) return;
+
+      const mode = card.dataset.mode || 'custom';
+
+      // pending 模式：只顯示選擇模式區
+      if (mode === 'pending') {
+        togglePhase(card, '.phase-mode', true);
+        togglePhase(card, '.phase-name', false);
+        togglePhase(card, '.phase-need', false);
+        togglePhase(card, '.phase-go', false);
+        togglePhase(card, '.phase-back', false);
+        togglePhase(card, '.phase-type', false);
+        updatePassengerSummary(card);
+        updateAddButton();
+        return;
+      }
+
+      // copy 模式：選好複製、只露姓名讓對方填，其它階段隱藏（值已自動帶入）
+      if (mode === 'copy') {
+        togglePhase(card, '.phase-mode', false);
+        togglePhase(card, '.phase-name', true);
+        togglePhase(card, '.phase-need', false);
+        togglePhase(card, '.phase-go', false);
+        togglePhase(card, '.phase-back', false);
+        togglePhase(card, '.phase-type', false);
+        updatePassengerSummary(card);
+        updateAddButton();
+        return;
+      }
+
+      // custom 模式（或第 1 位）：照漸進式流程
+      togglePhase(card, '.phase-mode', false);
+      togglePhase(card, '.phase-name', true);
+
+      // 姓名是否決定好？
+      const nameInput = card.querySelector('.passengerName');
+      const nameDecided = nameInput && nameInput.value.trim() !== '';
+
+      const needInput = card.querySelector('input[name^="ticketNeed_"]:checked');
+      const needValue = needInput ? needInput.value : '';
+
+      const c = window.appConfig || getFallbackConfig();
+      const goTrainsLen = (c.goTrains || []).length;
+      const backTrainsLen = (c.backTrains || []).length;
+
+      const needsGo = needValue === '只要去程車票' || needValue === '需要去回程車票';
+      const needsBack = needValue === '只要回程車票' || needValue === '需要去回程車票';
+
+      const goInput = card.querySelector('input[name^="goTrain_"]:checked');
+      const backInput = card.querySelector('input[name^="backTrain_"]:checked');
+      const goReady = !needsGo || !!goInput || goTrainsLen <= 1;
+      const backReady = !needsBack || !!backInput || backTrainsLen <= 1;
+
+      togglePhase(card, '.phase-need', nameDecided);
+      togglePhase(card, '.phase-go', nameDecided && needsGo && goTrainsLen > 1);
+      togglePhase(card, '.phase-back', nameDecided && needsBack && backTrainsLen > 1);
+      togglePhase(card, '.phase-type', nameDecided && !!needValue && goReady && backReady);
+
+      updatePassengerSummary(card);
+      updateAddButton();
+    }
+
+    function togglePhase(card, selector, show) {
+      const el = card.querySelector(selector);
+      if (!el) return;
+      if (show) {
+        el.classList.remove('phase-locked');
+      } else {
+        el.classList.add('phase-locked');
+      }
+    }
+
+    function updateAddButton() {
+      const btn = document.getElementById('addPassengerBtn');
+      if (!btn) return;
+      const firstCard = document.querySelector('.passenger-card');
+      if (!firstCard) {
+        btn.style.display = 'none';
+        return;
+      }
+      const typeSel = firstCard.querySelector('input[name^="ticketType_"]:checked');
+      btn.style.display = typeSel ? '' : 'none';
+    }
+
+    function copyFromPassenger1(btn) {
+      const card = btn.closest('.passenger-card');
+      const firstCard = document.querySelector('.passenger-card');
+      if (!firstCard || firstCard === card) return;
+
+      // 把第 1 位的 4 個 radio 選擇複製到當前卡片
+      ['ticketNeed', 'goTrain', 'backTrain', 'ticketType'].forEach(function(prefix) {
+        const sourceRadio = firstCard.querySelector('input[name^="' + prefix + '_"]:checked');
+        if (!sourceRadio) return;
+        const targetRadio = card.querySelector('input[name^="' + prefix + '_"][value="' + sourceRadio.value + '"]');
+        if (targetRadio) targetRadio.checked = true;
+      });
+
+      // 同步去程/回程的 disabled 狀態
+      const needInput = card.querySelector('input[name^="ticketNeed_"]:checked');
+      if (needInput) {
+        const needsGo = needInput.value === '只要去程車票' || needInput.value === '需要去回程車票';
+        const needsBack = needInput.value === '只要回程車票' || needInput.value === '需要去回程車票';
+        card.querySelectorAll('input[name^="goTrain_"]').forEach(function(r) { r.disabled = !needsGo; });
+        card.querySelectorAll('input[name^="backTrain_"]').forEach(function(r) { r.disabled = !needsBack; });
+      }
+
+      card.dataset.mode = 'copy';
+      updatePhaseVisibility(card);
+      focusPassengerName(card);
+    }
+
+    function useCustomMode(btn) {
+      const card = btn.closest('.passenger-card');
+      card.dataset.mode = 'custom';
+      updatePhaseVisibility(card);
+      focusPassengerName(card);
+    }
+
+    // 選完「跟第 1 位一樣／自己選擇」→ 游標直接放到姓名欄（手機會跳出鍵盤）
+    function focusPassengerName(card) {
+      const nameInput = card.querySelector('.passengerName');
+      if (nameInput && !nameInput.value) setTimeout(function() { nameInput.focus(); }, 50);
+    }
+
+    function handleTicketNeedChange(input) {
+      const card = input.closest('.passenger-card');
+      const goInputs = card.querySelectorAll('input[name^="goTrain_"]');
+      const backInputs = card.querySelectorAll('input[name^="backTrain_"]');
+
+      const needsGo = input.value === '只要去程車票' || input.value === '需要去回程車票';
+      const needsBack = input.value === '只要回程車票' || input.value === '需要去回程車票';
+
+      goInputs.forEach(item => {
+        item.disabled = !needsGo;
+        if (!needsGo) item.checked = false;
+      });
+      // 單一車次時自動勾選
+      if (needsGo && goInputs.length === 1) goInputs[0].checked = true;
+
+      backInputs.forEach(item => {
+        item.disabled = !needsBack;
+        if (!needsBack) item.checked = false;
+      });
+      if (needsBack && backInputs.length === 1) backInputs[0].checked = true;
+
+      updatePhaseVisibility(card);
+    }
+
+    function toggleDocumentBox(input) {
+      const card = input.closest('.passenger-card');
+      const box = card.querySelector('.document-box');
+      const fileInput = card.querySelector('.documentFile');
+      const needDocument = input.value === '敬老票' || input.value === '愛心票' || input.value === '孩童票';
+
+      if (box) {
+        box.style.display = needDocument ? 'block' : 'none';
+      }
+
+      if (!needDocument && fileInput) {
+        fileInput.value = '';
+      }
+
+      updatePassengerSummary(card);
+      // 第 1 位選好票種後才出現「＋ 新增一位搭車人」→ 這裡也要更新（之前漏了，按鈕一直不出現）
+      updateAddButton();
+    }
+
+    function updatePassengerSummary(card) {
+      if (!card) return;
+
+      const needInput = card.querySelector('input[name^="ticketNeed_"]:checked');
+      const goInput = card.querySelector('input[name^="goTrain_"]:checked');
+      const backInput = card.querySelector('input[name^="backTrain_"]:checked');
+      const typeInput = card.querySelector('input[name^="ticketType_"]:checked');
+
+      const needValue = needInput ? needInput.value : '';
+      const goValue = goInput ? goInput.value : '';
+      const backValue = backInput ? backInput.value : '';
+      const typeValue = typeInput ? typeInput.value : '';
+
+      // 「目前選擇」等有選了車票需求或票種才出現
+      const summaryBox = card.querySelector('.passenger-summary');
+      if (summaryBox) summaryBox.style.display = (needValue || typeValue) ? '' : 'none';
+
+      const needTag = card.querySelector('.summary-need');
+      const goTag = card.querySelector('.summary-go');
+      const backTag = card.querySelector('.summary-back');
+      const typeTag = card.querySelector('.summary-type');
+      const priceTag = card.querySelector('.summary-price');
+
+      const c = window.appConfig || getFallbackConfig();
+      const goTrainsLen = (c.goTrains || []).length;
+      const backTrainsLen = (c.backTrains || []).length;
+
+      if (needTag) {
+        if (needValue) {
+          const labels = {
+            '只要去程車票': '⬆ 只要去程',
+            '只要回程車票': '⬇ 只要回程',
+            '需要去回程車票': '⇅ 去回程都要'
+          };
+          needTag.textContent = labels[needValue] || needValue;
+          needTag.classList.remove('empty');
+        } else {
+          needTag.textContent = '尚未選擇車票需求';
+          needTag.classList.add('empty');
+        }
+      }
+
+      if (goTag) {
+        const needsGo = needValue === '只要去程車票' || needValue === '需要去回程車票';
+        // 只在「需要選且有多趟車次」時顯示
+        if (needsGo && goTrainsLen > 1) {
+          goTag.style.display = '';
+          if (goValue) {
+            goTag.textContent = '去程 ' + goValue;
+            goTag.classList.remove('empty');
+          } else {
+            goTag.textContent = '尚未選擇去程車次';
+            goTag.classList.add('empty');
+          }
+        } else {
+          goTag.style.display = 'none';
+        }
+      }
+
+      if (backTag) {
+        const needsBack = needValue === '只要回程車票' || needValue === '需要去回程車票';
+        if (needsBack && backTrainsLen > 1) {
+          backTag.style.display = '';
+          if (backValue) {
+            backTag.textContent = '回程 ' + backValue;
+            backTag.classList.remove('empty');
+          } else {
+            backTag.textContent = '尚未選擇回程車次';
+            backTag.classList.add('empty');
+          }
+        } else {
+          backTag.style.display = 'none';
+        }
+      }
+
+      if (typeTag) {
+        if (typeValue) {
+          typeTag.textContent = typeValue;
+          typeTag.classList.remove('empty');
+        } else {
+          typeTag.textContent = '尚未選擇票種';
+          typeTag.classList.add('empty');
+        }
+      }
+
+      if (priceTag) {
+        const price = calculatePreviewPrice(typeValue, needValue, goValue, backValue);
+        priceTag.textContent = price.toLocaleString('zh-TW') + ' 元';
+      }
+    }
+
+    function buildTrainBoxHtml(direction, trains, passengerCount) {
+      if (!trains || trains.length === 0) return '';
+
+      const isGo = direction === 'go';
+      const labelTxt = isGo ? '去程車次' : '回程車次';
+      const radioName = (isGo ? 'goTrain_' : 'backTrain_') + passengerCount;
+      const colorPrefix = isGo ? 'go' : 'back';
+      const otherDirShortText = isGo ? '只要回程' : '只要去程';
+      const boxClass = isGo ? 'go-train-box' : 'back-train-box';
+
+      const cardsHtml = trains.map((t, idx) => {
+        const trainClass = 'train-card-' + colorPrefix + (idx + 1);
+        const checked = trains.length === 1 ? 'checked' : '';
+        return `
+          <label class="train-option">
+            <input type="radio" name="${radioName}" value="${escapeHtml(t.no)}" ${checked} onchange="updatePhaseVisibility(this.closest('.passenger-card'))">
+            <span class="train-card ${trainClass}">
+              ${t.tag ? `<span class="train-tag">${escapeHtml(t.tag)}</span>` : ''}
+              ${t.date ? `<span class="train-date">📅 ${escapeHtml(t.date)}</span>` : ''}
+              <span class="train-no">車次 ${escapeHtml(t.no)}</span>
+              <span class="train-time">${escapeHtml(t.depart)} → ${escapeHtml(t.arrive)}</span>
+              <span class="train-fare">${escapeHtml(t.discount)}｜${t.price}元</span>
+            </span>
+          </label>
+        `;
+      }).join('');
+
+      if (trains.length === 1) {
+        return `<div class="${boxClass}" style="display:none;"><div class="train-options">${cardsHtml}</div></div>`;
+      }
+
+      return `
+        <div class="${boxClass}">
+          <label><span class="hsr-icon">🚄</span>${labelTxt}</label>
+          <div class="label-hint">${trains.length} 個車次擇一（選了「${otherDirShortText}」則不需選）</div>
+          <div class="train-options">${cardsHtml}</div>
+          <div class="small-hint">※ 選擇「只要${isGo ? '去程' : '回程'}車票」或「需要去回程車票」才需要選${isGo ? '去程' : '回程'}車次。</div>
+        </div>
+      `;
+    }
+
+    function addPassenger() {
+      passengerCount++;
+
+      const c = window.appConfig || getFallbackConfig();
+      const goTrains = c.goTrains || [];
+      const backTrains = c.backTrains || [];
+      const goFrom = c['去程_出發站'];
+      const goTo = c['去程_抵達站'];
+      const goDir = c['去程_方向'];
+      const backDir = c['回程_方向'];
+      const concession = c['優待票_單程價'];
+
+      const container = document.getElementById('passengerList');
+      const card = document.createElement('div');
+      card.className = 'passenger-card';
+      card.dataset.index = passengerCount;
+
+      // 第 1 位預設「同登記人」；第 2 位以上一定是別人（家人／朋友），只給姓名欄、不再出現「同登記人姓名」
+      const defaultNameSource = passengerCount === 1 ? 'register' : 'custom';
+      // 第 1 位預設 custom 模式；第 2 位以上預設 pending（要等使用者選複製或自選）
+      card.dataset.mode = passengerCount === 1 ? 'custom' : 'pending';
+
+      card.innerHTML = `
+        ${passengerCount > 1 ? '<button type="button" class="remove-btn" onclick="removePassenger(this)">刪除</button>' : ''}
+        <div class="passenger-title"><span class="hsr-icon">🚄</span>第 ${passengerCount} 位搭車人</div>
+
+        ${passengerCount > 1 ? `
+        <div class="phase phase-mode">
+          <div class="mode-prompt">這位搭車人要怎麼設定？</div>
+          <div class="mode-options">
+            <button type="button" class="mode-card mode-card-copy" onclick="copyFromPassenger1(this)">
+              <span class="mode-icon">🔁</span>
+              <span class="mode-title">跟第 1 位一樣</span>
+              <span class="mode-sub">沿用車票需求／車次／票種</span>
+            </button>
+            <button type="button" class="mode-card mode-card-custom" onclick="useCustomMode(this)">
+              <span class="mode-icon">✏️</span>
+              <span class="mode-title">自己選擇</span>
+              <span class="mode-sub">這位搭車人想不一樣</span>
+            </button>
+          </div>
+        </div>
+        ` : ''}
+
+        <div class="phase phase-name">
+          <label>搭車人姓名</label>
+          ${passengerCount === 1 ? `
+          <div class="name-options">
+            <label class="name-option">
+              <input type="radio" name="nameSource_${passengerCount}" value="register" ${defaultNameSource === 'register' ? 'checked' : ''} onchange="handleNameSourceChange(this)">
+              <span class="name-card name-card-register">
+                <span class="name-icon">👤</span>
+                <span class="name-card-title">同登記人姓名</span>
+                <span class="name-card-sub registerNamePreview">（尚未填寫）</span>
+              </span>
+            </label>
+            <label class="name-option">
+              <input type="radio" name="nameSource_${passengerCount}" value="custom" ${defaultNameSource === 'custom' ? 'checked' : ''} onchange="handleNameSourceChange(this)">
+              <span class="name-card name-card-custom">
+                <span class="name-icon">✏️</span>
+                <span class="name-card-title">另外填入</span>
+                <span class="name-card-sub">為別人登記</span>
+              </span>
+            </label>
+          </div>
+          <input type="text" class="passengerName ${defaultNameSource === 'register' ? 'hidden-name-input' : ''}" required placeholder="請輸入搭車人姓名" ${defaultNameSource === 'register' ? 'readonly' : ''} oninput="updatePhaseVisibility(this.closest('.passenger-card'))">
+          ` : `
+          <input type="text" class="passengerName" required placeholder="請輸入同行家人或朋友的姓名" oninput="updatePhaseVisibility(this.closest('.passenger-card'))">
+          `}
+        </div>
+
+        <div class="phase phase-need phase-locked">
+          <label><span class="hsr-icon">🚄</span>車票需求</label>
+          <div class="label-hint">請選擇您需要哪一種車票（三擇一）</div>
+          <div class="need-options">
+          <label class="need-option">
+            <input type="radio" name="ticketNeed_${passengerCount}" value="只要去程車票" required onchange="handleTicketNeedChange(this)">
+            <span class="need-card need-card-go">
+              <span class="need-icon">
+                <span class="dir-badge dir-badge-north">${goDir.charAt(0)}</span>
+                <span class="need-arrow">⬆</span>
+              </span>
+              <span class="need-title">只要去程車票</span>
+              <span class="need-sub">${goDir}｜${goFrom} → ${goTo}</span>
+            </span>
+          </label>
+
+          <label class="need-option">
+            <input type="radio" name="ticketNeed_${passengerCount}" value="只要回程車票" onchange="handleTicketNeedChange(this)">
+            <span class="need-card need-card-back">
+              <span class="need-icon">
+                <span class="dir-badge dir-badge-south">${backDir.charAt(0)}</span>
+                <span class="need-arrow">⬇</span>
+              </span>
+              <span class="need-title">只要回程車票</span>
+              <span class="need-sub">${backDir}｜${goTo} → ${goFrom}</span>
+            </span>
+          </label>
+
+          <label class="need-option">
+            <input type="radio" name="ticketNeed_${passengerCount}" value="需要去回程車票" onchange="handleTicketNeedChange(this)">
+            <span class="need-card need-card-both">
+              <span class="need-icon">
+                <span class="dir-double">
+                  <span class="dir-badge dir-badge-north">${goDir.charAt(0)}</span>
+                  <span class="dir-badge dir-badge-south">${backDir.charAt(0)}</span>
+                </span>
+                <span class="need-arrow">⇅</span>
+              </span>
+              <span class="need-title">需要去回程車票</span>
+              <span class="need-sub">${goDir}＋${backDir}｜${goFrom} ⇄ ${goTo}</span>
+            </span>
+          </label>
+          </div>
+        </div>
+
+        <div class="phase phase-go phase-locked">
+          ${buildTrainBoxHtml('go', goTrains, passengerCount)}
+        </div>
+
+        <div class="phase phase-back phase-locked">
+          ${buildTrainBoxHtml('back', backTrains, passengerCount)}
+        </div>
+
+        <div class="phase phase-type phase-locked">
+          <label><span class="hsr-icon">🚄</span>票種</label>
+          <div class="label-hint">依乘客身份選擇對應票種（優待票可上傳證件，或之後傳 LINE 給小秘書）</div>
+          <div class="ticket-options">
+          <label class="ticket-option">
+            <input type="radio" name="ticketType_${passengerCount}" value="全票" required onchange="toggleDocumentBox(this)">
+            <span class="ticket-card ticket-card-full">
+              <span class="ticket-label ticket-label-full">全票</span>
+              <span class="ticket-content">
+                <span class="ticket-eligibility">${escapeHtml(c['全票_適用對象'] || '一般成人')}</span>
+                <span class="ticket-price">依車次票價</span>
+                <span class="ticket-note">不需證件</span>
+              </span>
+            </span>
+          </label>
+
+          <label class="ticket-option">
+            <input type="radio" name="ticketType_${passengerCount}" value="敬老票" onchange="toggleDocumentBox(this)">
+            <span class="ticket-card ticket-card-senior">
+              <span class="ticket-label ticket-label-senior">敬老票</span>
+              <span class="ticket-content">
+                <span class="ticket-eligibility">${escapeHtml(c['敬老票_適用對象'] || '65 歲以上長者')}</span>
+                <span class="ticket-price">每趟 ${concession} 元</span>
+                <span class="ticket-note">可上傳證件</span>
+              </span>
+            </span>
+          </label>
+
+          <label class="ticket-option">
+            <input type="radio" name="ticketType_${passengerCount}" value="愛心票" onchange="toggleDocumentBox(this)">
+            <span class="ticket-card ticket-card-love">
+              <span class="ticket-label ticket-label-love">愛心票</span>
+              <span class="ticket-content">
+                <span class="ticket-eligibility">${escapeHtml(c['愛心票_適用對象'] || '身心障礙者')}</span>
+                <span class="ticket-price">每趟 ${concession} 元</span>
+                <span class="ticket-note">可上傳證件</span>
+              </span>
+            </span>
+          </label>
+
+          <label class="ticket-option">
+            <input type="radio" name="ticketType_${passengerCount}" value="孩童票" onchange="toggleDocumentBox(this)">
+            <span class="ticket-card ticket-card-child">
+              <span class="ticket-label ticket-label-child">孩童票</span>
+              <span class="ticket-content">
+                <span class="ticket-eligibility">${escapeHtml(c['孩童票_適用對象'] || '6 ～ 12 歲兒童')}</span>
+                <span class="ticket-price">每趟 ${concession} 元</span>
+                <span class="ticket-note">可上傳證件</span>
+              </span>
+            </span>
+          </label>
+          </div>
+
+          <div class="document-box">
+            <label>證件上傳（非必填）</label>
+            <input type="file" class="documentFile" accept="image/*,.pdf">
+            <div class="small-hint" style="margin-top:10px;margin-bottom:0;">※ 不方便上傳也可以直接傳 LINE 給小秘書。</div>
+          </div>
+        </div>
+
+        <div class="passenger-summary" style="display:none;">
+          <span class="passenger-summary-label">目前選擇：</span>
+          <span class="summary-tag empty summary-need">尚未選擇車票需求</span>
+          <span class="summary-tag empty summary-go" style="display:none;">尚未選擇去程車次</span>
+          <span class="summary-tag empty summary-back" style="display:none;">尚未選擇回程車次</span>
+          <span class="summary-tag empty summary-type">尚未選擇票種</span>
+          <span class="summary-tag price summary-price">0 元</span>
+        </div>
+      `;
+
+      container.appendChild(card);
+      refreshPassengerTitles();
+
+      // 同步登記人姓名預覽到所有卡片
+      syncFirstPassengerName();
+
+      const defaultTicketNeed = card.querySelector('input[name^="ticketNeed_"]:checked');
+      if (defaultTicketNeed) {
+        handleTicketNeedChange(defaultTicketNeed);
+      }
+
+      // 初始化階段顯示
+      updatePhaseVisibility(card);
+    }
+
+    function removePassenger(btn) {
+      btn.parentElement.remove();
+      refreshPassengerTitles();
+    }
+
+    function refreshPassengerTitles() {
+      const cards = document.querySelectorAll('.passenger-card');
+      cards.forEach((card, index) => {
+        card.querySelector('.passenger-title').innerHTML = '<span class="hsr-icon">🚄</span>第 ' + (index + 1) + ' 位搭車人';
+      });
+    }
+
+    function getSelectedRadio(name) {
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      return checked ? checked.value : '';
+    }
+
+    function readFileAsBase64(fileInput) {
+      return new Promise((resolve) => {
+        const file = fileInput.files[0];
+
+        if (!file) {
+          resolve(null);
+          return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+          resolve({
+            name: file.name,
+            mimeType: file.type,
+            data: e.target.result
+          });
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function calculatePreviewPrice(ticketType, ticketNeed, goTrain, backTrain) {
+      const c = window.appConfig || getFallbackConfig();
+      const concession = Number(c['優待票_單程價']) || 0;
+      const goSpec = (c.goTrains || []).find(t => t.no === goTrain);
+      const backSpec = (c.backTrains || []).find(t => t.no === backTrain);
+
+      let total = 0;
+
+      if (ticketType === '全票') {
+        if ((ticketNeed === '只要去程車票' || ticketNeed === '需要去回程車票') && goSpec) total += goSpec.price;
+        if ((ticketNeed === '只要回程車票' || ticketNeed === '需要去回程車票') && backSpec) total += backSpec.price;
+        return total;
+      }
+
+      if (ticketType === '敬老票' || ticketType === '愛心票' || ticketType === '孩童票') {
+        if (ticketNeed === '只要去程車票' || ticketNeed === '需要去回程車票') total += concession;
+        if (ticketNeed === '只要回程車票' || ticketNeed === '需要去回程車票') total += concession;
+        return total;
+      }
+
+      return 0;
+    }
+
+    function buildTimeFullText(train, direction) {
+      const c = window.appConfig || getFallbackConfig();
+      const isGo = direction === 'go';
+      const dir = isGo ? c['去程_方向'] : c['回程_方向'];
+      const from = isGo ? c['去程_出發站'] : c['去程_抵達站'];
+      const to = isGo ? c['去程_抵達站'] : c['去程_出發站'];
+      const parts = [];
+      if (train.date) parts.push(train.date);
+      parts.push(dir + '車次' + train.no);
+      parts.push(from + ' → ' + to);
+      parts.push(train.depart + ' → ' + train.arrive);
+      parts.push(train.discount + ' ' + train.price + '元');
+      return parts.join('｜');
+    }
+
+    function getGoTimeText(ticketNeed, goTrain) {
+      if (ticketNeed !== '只要去程車票' && ticketNeed !== '需要去回程車票') return '';
+      const c = window.appConfig || getFallbackConfig();
+      const train = (c.goTrains || []).find(t => t.no === goTrain);
+      if (!train) return '';
+      return buildTimeFullText(train, 'go');
+    }
+
+    function getBackTimeText(ticketNeed, backTrain) {
+      if (ticketNeed !== '只要回程車票' && ticketNeed !== '需要去回程車票') return '';
+      const c = window.appConfig || getFallbackConfig();
+      const train = (c.backTrains || []).find(t => t.no === backTrain);
+      if (!train) return '';
+      return buildTimeFullText(train, 'back');
+    }
+
+    function buildSubmitPreview(registerName, note, passengers) {
+      let total = 0;
+      let html = `
+        <div class="success-detail">
+          <div class="success-detail-title">以下是您的登記內容，請再確認一次</div>
+          <div class="success-detail-card">
+            <strong>登記人：${escapeHtml(registerName)}</strong>
+            ${note ? `<br>備註：${escapeHtml(note)}` : ''}
+          </div>
+      `;
+
+      passengers.forEach((item, index) => {
+        const price = calculatePreviewPrice(item.ticketType, item.ticketNeed, item.goTrain, item.backTrain);
+        const goTime = getGoTimeText(item.ticketNeed, item.goTrain);
+        const backTime = getBackTimeText(item.ticketNeed, item.backTrain);
+        total += price;
+
+        html += `
+          <div class="success-detail-card">
+            <strong>第 ${index + 1} 位｜${escapeHtml(item.passengerName)}</strong><br>
+            車票需求：${escapeHtml(item.ticketNeed)}<br>
+            票種：${escapeHtml(item.ticketType)}<br>
+            ${goTime ? `去程：${escapeHtml(goTime)}<br>` : ''}
+            ${backTime ? `回程：${escapeHtml(backTime)}<br>` : ''}
+            票價：${price.toLocaleString('zh-TW')} 元
+          </div>
+        `;
+      });
+
+      html += `
+          <div class="success-total">共 ${passengers.length} 位｜總金額 ${total.toLocaleString('zh-TW')} 元</div>
+        </div>
+      `;
+
+      return html;
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    document.getElementById('ticketForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('submitBtn');
+      const successBox = document.getElementById('successBox');
+      const errorBox = document.getElementById('errorBox');
+
+      successBox.style.display = 'none';
+      errorBox.style.display = 'none';
+
+      const registerName = document.getElementById('registerName').value.trim();
+      const note = document.getElementById('note').value.trim();
+
+      if (!registerName) {
+        errorBox.textContent = '請填寫登記人姓名';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      syncFirstPassengerName();
+
+      const cards = document.querySelectorAll('.passenger-card');
+      const passengers = [];
+
+      for (const card of cards) {
+        const passengerName = card.querySelector('.passengerName').value.trim();
+
+        const ticketNeedInput = card.querySelector('input[name^="ticketNeed_"]');
+        const ticketTypeInput = card.querySelector('input[name^="ticketType_"]');
+        const goTrainInput = card.querySelector('input[name^="goTrain_"]');
+        const backTrainInput = card.querySelector('input[name^="backTrain_"]');
+
+        const ticketNeed = getSelectedRadio(ticketNeedInput.name);
+        const ticketType = getSelectedRadio(ticketTypeInput.name);
+        const goTrain = goTrainInput ? getSelectedRadio(goTrainInput.name) : '';
+        const backTrain = backTrainInput ? getSelectedRadio(backTrainInput.name) : '';
+
+        const fileInput = card.querySelector('.documentFile');
+        const documentFile = await readFileAsBase64(fileInput);
+
+        if (!passengerName || !ticketNeed || !ticketType) {
+          errorBox.textContent = '請確認每一位搭車人的姓名、車票需求與票種都有填寫';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        if ((ticketNeed === '只要去程車票' || ticketNeed === '需要去回程車票') && !goTrain) {
+          errorBox.textContent = '請選擇去程車次';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        if ((ticketNeed === '只要回程車票' || ticketNeed === '需要去回程車票') && !backTrain) {
+          errorBox.textContent = '請選擇回程車次';
+          errorBox.style.display = 'block';
+          return;
+        }
+
+        passengers.push({
+          passengerName,
+          ticketNeed,
+          ticketType,
+          goTrain,
+          backTrain,
+          documentFile
+        });
+      }
+
+      const formData = {
+        registerName,
+        note,
+        passengers
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送出中，請稍候...';
+
+      // 同一份登記重送（例如網路斷掉後再按一次）用同一個 submitId，後端認得、不會寫兩筆
+      if (!window.pendingSubmitId) window.pendingSubmitId = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
+      callServer('submit', { formData: formData, submitId: window.pendingSubmitId }, 90000).then(function(res) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '送出登記';
+
+          if (res && res.success) {
+            window.pendingSubmitId = null;
+            document.getElementById('ticketForm').style.display = 'none';
+
+            successBox.innerHTML =
+              '<div style="font-size:22px;margin-bottom:10px;">🎉 登記成功！</div>' +
+              '<div>共登記 ' + res.count + ' 位搭車人</div>' +
+              buildSubmitPreview(registerName, note, passengers) +
+              '<button type="button" class="submit-btn" onclick="resetForNewRegistration()">再登記一位 / 修改登記</button>';
+            successBox.style.display = 'block';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            errorBox.textContent = '送出失敗，請稍後再試';
+            errorBox.style.display = 'block';
+          }
+        }, function(err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '送出登記';
+          if (err && err.code === 'timeout') {
+            errorBox.textContent = '網路比較慢，系統可能已經收到了。請先用「查詢登記」輸入姓名確認；查不到再按一次送出（不會重複登記）。';
+          } else if (err && err.code === 'network') {
+            errorBox.textContent = '網路連線中斷，請確認網路後再按一次送出（不會重複登記）。';
+          } else {
+            errorBox.textContent = err && err.message ? err.message : '送出失敗，請稍後再試';
+          }
+          errorBox.style.display = 'block';
+        });
+    });
+
+    function resetForNewRegistration() {
+      const form = document.getElementById('ticketForm');
+      const successBox = document.getElementById('successBox');
+      window.pendingSubmitId = null;
+
+      form.reset();
+      document.getElementById('passengerList').innerHTML = '';
+      passengerCount = 0;
+      addPassenger();
+
+      successBox.style.display = 'none';
+      successBox.innerHTML = '';
+      form.style.display = 'block';
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function money(num) {
+      return Number(num || 0).toLocaleString('zh-TW');
+    }
+
+    function statusClass(text, type) {
+      if (type === 'pay') return text === '已收錢' ? 'paid' : 'unpaid';
+      return text === '已取票' ? 'taken' : 'untaken';
+    }
+
+    function buildSeatHtml(label, seat) {
+      if (seat && (seat.carNo || seat.seatNo)) {
+        const car = seat.carNo ? '<strong>' + escapeHtml(String(seat.carNo)) + '</strong> 車' : '';
+        const st = seat.seatNo ? '<strong>' + escapeHtml(String(seat.seatNo)) + '</strong> 號' : '';
+        return `
+          <div class="seat-box">
+            <span class="seat-icon">🪑</span>
+            <span class="seat-info">${label}車位：${car}${st}</span>
+          </div>
+        `;
+      }
+      return `
+        <div class="seat-box pending">
+          <span class="seat-icon">⏳</span>
+          <span class="seat-info">${label}車位：等高鐵確認購買後公布</span>
+        </div>
+      `;
+    }
+
+    function queryData() {
+      const name = document.getElementById('searchName').value.trim();
+      const queryBtn = document.getElementById('queryBtn');
+      const errorBox = document.getElementById('queryErrorBox');
+      const summaryBox = document.getElementById('summaryBox');
+      const resultBox = document.getElementById('resultBox');
+
+      errorBox.style.display = 'none';
+      summaryBox.style.display = 'none';
+      resultBox.innerHTML = '';
+
+      if (!name) {
+        errorBox.textContent = '請輸入登記人姓名';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      queryBtn.disabled = true;
+      queryBtn.textContent = '查詢中...';
+
+      callServer('query', { name: name }, 30000).then(function(res) {
+          queryBtn.disabled = false;
+          queryBtn.textContent = '查詢登記 / 車位';
+
+          if (!res || !res.success) {
+            errorBox.textContent = res.message || '查無資料';
+            errorBox.style.display = 'block';
+            return;
+          }
+
+          summaryBox.innerHTML = `
+            登記人：${res.registerName}<br>
+            共登記：${res.count} 位<br>
+            總金額：${money(res.total)} 元
+          `;
+          summaryBox.style.display = 'block';
+
+          let html = '';
+
+          res.list.forEach(item => {
+            const goSeatHtml = item.goTime ? buildSeatHtml('去程', item.goSeat) : '';
+            const backSeatHtml = item.backTime ? buildSeatHtml('回程', item.backSeat) : '';
+
+            html += `
+              <div class="result-card">
+                <div class="result-card-title">第 ${item.passengerNo} 位｜${item.passengerName}</div>
+                <div>車票需求：${item.ticketNeed}</div>
+                <div>票種：${item.ticketType}</div>
+                ${item.goTime ? `<div>去程：${item.goTime}</div>${goSeatHtml}` : ''}
+                ${item.backTime ? `<div>回程：${item.backTime}</div>${backSeatHtml}` : ''}
+                <div class="money-text">票價：${money(item.price)} 元</div>
+                <div>
+                  <span class="badge ${statusClass(item.paymentStatus, 'pay')}">${item.paymentStatus}</span>
+                  <span class="badge ${statusClass(item.ticketStatus, 'ticket')}">${item.ticketStatus}</span>
+                </div>
+                ${item.documentUrl ? `<div><a class="doc-link" href="${item.documentUrl}" target="_blank">查看已上傳證件</a></div>` : ''}
+                ${item.note ? `<div>備註：${item.note}</div>` : ''}
+              </div>
+            `;
+          });
+
+          resultBox.innerHTML = html;
+        }, function(err) {
+          queryBtn.disabled = false;
+          queryBtn.textContent = '查詢登記 / 車位';
+          errorBox.textContent = err && err.code ? err.message : '查詢失敗，請稍後再試';
+          errorBox.style.display = 'block';
+        });
+    }
+  </script>
+</body>
+</html>
