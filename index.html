@@ -2001,6 +2001,25 @@
     .route-loading { background: #f7f2ea; color: #8a6a45; }
     .load-error { background: #fff0f0; color: #b22222; }
     .load-error .query-btn { margin-top: 12px; }
+
+    /* 10/10 手機修正（使用者：手機看去回程的時間都超出畫面）：
+       原本卡片左邊是直式「去程／回程」標籤（72～86px）＋格子不能縮 → 窄手機上車次、時間、票價被切掉。
+       → 格子可以縮；手機上標籤改成卡片上方的橫條，時間那格不折行。 */
+    .route-box, .back-box { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
+    .route-card { grid-template-columns: 86px minmax(0, 1fr); }
+    .route-main { min-width: 0; }
+    .station-row { grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr); }
+    .train-chip { width: 100%; max-width: 280px; }
+    @media (max-width: 680px) {
+      .route-card { grid-template-columns: minmax(0, 1fr); }
+      .route-label { writing-mode: horizontal-tb; letter-spacing: 8px; padding: 8px 0; font-size: 22px; }
+      .route-main { padding: 14px 12px; }
+      .station-row { grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); gap: 6px; }
+      .station { padding: 10px 4px; }
+      .train-chip { grid-template-columns: 72px minmax(0, 1fr); }
+      .train-chip .chip-label { padding: 9px 6px; font-size: 15px; letter-spacing: 0; }
+      .train-chip .chip-value { padding: 9px 8px; white-space: nowrap; }
+    }
   </style>
 </head>
 
