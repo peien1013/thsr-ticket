@@ -3263,6 +3263,14 @@
               buildSubmitPreview(registerName, note, passengers) +
               '<button type="button" class="submit-btn" onclick="resetForNewRegistration()">再登記一位 / 修改登記</button>';
             successBox.style.display = 'block';
+            try {
+              var __lines = (passengers || []).map(function(p, i) {
+                return (i + 1) + '. ' + p.passengerName + ' | ' + p.ticketNeed + ' | ' + p.ticketType;
+              }).join('\n');
+              setTimeout(function() {
+                alert('✅ 登記成功！共 ' + res.count + ' 位：\n\n' + __lines + '\n\n詳細請看下方畫面。');
+              }, 150);
+            } catch (e) {}
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
           } else {
