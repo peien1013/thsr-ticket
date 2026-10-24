@@ -2020,6 +2020,103 @@
       .train-chip .chip-label { padding: 9px 6px; font-size: 15px; letter-spacing: 0; }
       .train-chip .chip-value { padding: 9px 8px; white-space: nowrap; }
     }
+
+    /* ========== D 版美化（登記人超大 + fork 按鈕） ========== */
+    /* 登記人 input 加大加粗 + 置中 */
+    .hero-input-field {
+      font-size: 28px !important;
+      font-weight: 900 !important;
+      text-align: center !important;
+      letter-spacing: 3px !important;
+      padding: 20px 18px !important;
+      height: auto !important;
+    }
+    .hero-input-field:focus {
+      box-shadow: 0 0 0 5px rgba(184,134,79,0.22) !important;
+    }
+    /* 登記人輸入後，下面出現綠色小標籤 */
+    .hero-input-field:valid:not(:placeholder-shown) {
+      background: #f0f8f1 !important;
+      border-color: #2ea043 !important;
+    }
+
+    /* 搭車人卡片陰影加強 */
+    .passenger-card {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+      border-radius: 20px !important;
+    }
+
+    /* fork 按鈕區塊：填完 1 位後出現的兩個大按鈕 */
+    .fork-wrap {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px 18px 20px;
+      margin: 20px 0 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      border: 2px solid #e0e4ea;
+    }
+    .fork-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      color: #1b365d;
+      margin-bottom: 16px;
+    }
+    .fork-wrap .add-btn,
+    .fork-wrap .submit-btn {
+      display: block !important;
+      width: 100% !important;
+      margin: 8px 0 !important;
+      font-size: 20px !important;
+      padding: 20px 16px !important;
+      border-radius: 14px !important;
+      font-weight: 900 !important;
+    }
+    .fork-wrap .submit-btn {
+      background: linear-gradient(135deg, #2ea043 0%, #1a7a33 100%) !important;
+      color: #fff !important;
+      border: none !important;
+      box-shadow: 0 6px 20px rgba(46,160,67,0.35) !important;
+    }
+    .fork-wrap .submit-btn:hover {
+      background: linear-gradient(135deg, #248838 0%, #146028 100%) !important;
+    }
+    .fork-wrap .add-btn {
+      background: #fff !important;
+      color: #1b365d !important;
+      border: 3px dashed #1b365d !important;
+    }
+    .fork-wrap .add-btn:hover {
+      background: #e8f0fc !important;
+    }
+    .fork-or {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 6px 0;
+      position: relative;
+    }
+    .fork-or::before, .fork-or::after {
+      content: '';
+      display: inline-block;
+      width: 60px; height: 1px;
+      background: #e0e4ea;
+      vertical-align: middle;
+      margin: 0 10px;
+    }
+
+    /* 總位數提示 chip */
+    .fork-count-chip {
+      display: inline-block;
+      background: #f6b73c;
+      color: #1b365d;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 800;
+      margin: 0 4px;
+    }
   </style>
 </head>
 
@@ -2156,12 +2253,25 @@
 
             <div id="passengerList"></div>
 
-            <button type="button" class="add-btn" id="addPassengerBtn" onclick="addPassenger()" style="display:none;">＋ 新增一位搭車人</button>
-
             <button type="button" class="add-btn" id="noteToggleBtn" onclick="openNote()">📝 有需要備註，請點這裡</button>
             <div id="noteBox" style="display:none">
               <label>備註</label>
               <textarea id="note" placeholder="例如：同行家人、特殊需求、其他備註"></textarea>
+            </div>
+
+            <!-- Fork 按鈕區塊：填完 1 位後出現 -->
+            <div class="fork-wrap" id="forkWrap" style="display:none;">
+              <div class="fork-title">填好了嗎？接下來要…</div>
+
+              <button type="submit" id="submitBtn" class="submit-btn">
+                ✓ 送出登記<span id="submitCountChip" class="fork-count-chip">1 位</span>
+              </button>
+
+              <div class="fork-or">或</div>
+
+              <button type="button" class="add-btn" id="addPassengerBtn" onclick="addPassenger()">
+                ＋ 登記第 <span id="nextPassengerNum">2</span> 位搭車人
+              </button>
             </div>
 
             <div class="hint">
@@ -2169,8 +2279,6 @@
               ※ 證件非必填，不方便上傳也可以直接傳 LINE 給小秘書。<br>
               ※ 送出後可用「登記人姓名」查詢登記 / 車位。
             </div>
-
-            <button type="submit" id="submitBtn" class="submit-btn">送出登記</button>
             </div>
 
             <div class="success" id="successBox"></div>
@@ -2594,15 +2702,62 @@
     }
 
     function updateAddButton() {
-      const btn = document.getElementById('addPassengerBtn');
-      if (!btn) return;
-      const firstCard = document.querySelector('.passenger-card');
-      if (!firstCard) {
-        btn.style.display = 'none';
-        return;
-      }
-      const typeSel = firstCard.querySelector('input[name^="ticketType_"]:checked');
-      btn.style.display = typeSel ? '' : 'none';
+      // 新版：改成控制整個 fork-wrap（送出 + 加人兩個大按鈕一起 show/hide）
+      updateForkWrap();
+    }
+
+    function isCardComplete(card) {
+      if (!card) return false;
+      const mode = card.dataset.mode || 'custom';
+      // pending 模式：還沒選模式，不算完成
+      if (mode === 'pending') return false;
+
+      // 姓名
+      const nameInput = card.querySelector('.passengerName');
+      if (!nameInput || !nameInput.value.trim()) return false;
+
+      // copy 模式：已複製第 1 位設定，只要姓名有就算完成
+      if (mode === 'copy') return true;
+
+      // custom 模式：需求、票種必須都有
+      const needInput = card.querySelector('input[name^="ticketNeed_"]:checked');
+      if (!needInput) return false;
+      const typeInput = card.querySelector('input[name^="ticketType_"]:checked');
+      if (!typeInput) return false;
+
+      // 若需要去程或回程，對應車次要選（唯一車次例外）
+      const needValue = needInput.value;
+      const needsGo = needValue === '只要去程車票' || needValue === '需要去回程車票';
+      const needsBack = needValue === '只要回程車票' || needValue === '需要去回程車票';
+      const c = window.appConfig || getFallbackConfig();
+      const goLen = (c.goTrains || []).length;
+      const backLen = (c.backTrains || []).length;
+
+      if (needsGo && goLen > 1 && !card.querySelector('input[name^="goTrain_"]:checked')) return false;
+      if (needsBack && backLen > 1 && !card.querySelector('input[name^="backTrain_"]:checked')) return false;
+
+      return true;
+    }
+
+    function updateForkWrap() {
+      const wrap = document.getElementById('forkWrap');
+      if (!wrap) return;
+
+      const cards = document.querySelectorAll('.passenger-card');
+      if (cards.length === 0) { wrap.style.display = 'none'; return; }
+
+      // 所有卡片都要是「完成」狀態，fork-wrap 才顯示
+      let allComplete = true;
+      cards.forEach(function(c) { if (!isCardComplete(c)) allComplete = false; });
+
+      if (!allComplete) { wrap.style.display = 'none'; return; }
+
+      wrap.style.display = '';
+      // 更新「送出 N 位」和「登記第 N+1 位」
+      const countChip = document.getElementById('submitCountChip');
+      if (countChip) countChip.textContent = cards.length + ' 位';
+      const nextNum = document.getElementById('nextPassengerNum');
+      if (nextNum) nextNum.textContent = String(cards.length + 1);
     }
 
     function copyFromPassenger1(btn) {
