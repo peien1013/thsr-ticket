@@ -2281,9 +2281,11 @@
             </div>
             </div>
 
-            <div class="success" id="successBox"></div>
             <div class="error" id="errorBox"></div>
           </form>
+
+          <!-- successBox 放在 form 外，避免 form.display:none 時連帶看不到成功訊息和「再登記一位」按鈕 -->
+          <div class="success" id="successBox"></div>
         </div>
 
         <div id="querySection" class="section">
